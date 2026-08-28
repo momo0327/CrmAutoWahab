@@ -1,5 +1,5 @@
 import { useEffect, useState, useContext, useRef } from "react";
-import { X, Loader2, RefreshCw, ExternalLink, Trash2, Calendar as CalendarIcon, Plus, PhoneCall, Copy, Check, ChevronDown } from "lucide-react";
+import { X, Loader2, RefreshCw, ExternalLink, Trash2, Calendar as CalendarIcon, Plus, PhoneCall, Copy, Check, ChevronDown, Mail } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
 import { researchCompanyFn } from "@/lib/research.functions";
@@ -33,6 +33,10 @@ export function CompanyDrawer({ company: initial, onClose, onCompanyChange, onCo
   const [addingPhone, setAddingPhone] = useState(false);
   const [newPhone, setNewPhone] = useState("");
   const [savingPhone, setSavingPhone] = useState(false);
+  const [email, setEmail] = useState(initial.email ?? "");
+  const [savingEmail, setSavingEmail] = useState(false);
+  const [emailSaved, setEmailSaved] = useState(false);
+  const [emailFocused, setEmailFocused] = useState(false);
   const softphone = useContext(SoftphoneContext);
   const research = useServerFn(researchCompanyFn);
   const { customStatuses, createCustomStatus, deleteCustomStatus } = useCustomStatuses();
@@ -233,7 +237,7 @@ export function CompanyDrawer({ company: initial, onClose, onCompanyChange, onCo
         <div className="p-6 space-y-6">
           <section className="space-y-3">
             <div className="flex items-center justify-between">
-              <h4 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Contact</h4>
+              <h4 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Phone numbers</h4>
               {!readOnly && (
                 <button
                   onClick={doResearch}
@@ -304,6 +308,7 @@ export function CompanyDrawer({ company: initial, onClose, onCompanyChange, onCo
                 )
               )}
             </div>
+
             {softphone && (
               <div className="flex gap-1.5 mt-1 items-center">
                 <input
@@ -343,6 +348,54 @@ export function CompanyDrawer({ company: initial, onClose, onCompanyChange, onCo
                 )}
               </div>
             )}
+
+            {/* Email */}
+            <div className="space-y-1.5">
+              <h4 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Mail</h4>
+              {email.trim() && !emailFocused ? (
+                <div className="flex items-center gap-1.5">
+                  <Mail className="size-3.5 text-muted-foreground shrink-0" />
+                  <span
+                    className="text-sm cursor-text"
+                    onClick={() => !readOnly && setEmailFocused(true)}
+                  >
+                    {email}
+                  </span>
+                  <QuickCopy value={email.trim()} />
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5">
+                  <div className="relative flex-1">
+                    <Mail className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground pointer-events-none" />
+                    <input
+                      autoFocus={emailFocused}
+                      type="email"
+                      value={email}
+                      onChange={(e) => { setEmail(e.target.value); setEmailSaved(false); }}
+                      onFocus={() => setEmailFocused(true)}
+                      onBlur={async () => {
+                        setEmailFocused(false);
+                        if (email === (company.email ?? "")) return;
+                        setSavingEmail(true);
+                        const { error } = await supabase.from("companies").update({ email: email.trim() || null }).eq("id", company.id);
+                        setSavingEmail(false);
+                        if (error) return toast.error(error.message);
+                        const updated = { ...company, email: email.trim() || null };
+                        setCompany(updated); onCompanyChange?.(updated);
+                        toast.success("Email saved");
+                        setEmailSaved(true);
+                        setTimeout(() => setEmailSaved(false), 2000);
+                      }}
+                      readOnly={readOnly}
+                      placeholder="Email address"
+                      className="w-full pl-8 pr-2.5 py-1.5 text-xs border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                    />
+                  </div>
+                  {savingEmail && <Loader2 className="size-3.5 animate-spin text-muted-foreground shrink-0" />}
+                </div>
+              )}
+            </div>
+
             {company.website && (
               <a href={company.website} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-sm text-info hover:underline">
                 <ExternalLink className="size-3" /> {company.website}

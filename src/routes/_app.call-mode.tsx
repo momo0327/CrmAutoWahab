@@ -396,6 +396,17 @@ function CompanyCard({
               contactName={company.name}
             />
           </div>
+          {(company as any).email && (
+            <div className="mt-2 flex items-center gap-1.5">
+              <span className="text-xs text-muted-foreground truncate flex-1">{(company as any).email}</span>
+              <button
+                onClick={() => { navigator.clipboard.writeText((company as any).email); toast.success("Email copied", { position: "bottom-right" }); }}
+                className="px-2.5 py-1 rounded-md border bg-background text-xs hover:bg-muted transition-colors shrink-0"
+              >
+                Copy
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Status change */}

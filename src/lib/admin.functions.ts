@@ -178,6 +178,42 @@ export const inviteEmployeeFn = createServerFn({ method: "POST" })
     return inviteUser(data.email, data.role);
   });
 
+export const getAllEmailsFn = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { assertAdmin, listAllAuthUsers } = await import("./admin.server");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { supabase, userId } = context;
+    await assertAdmin(supabase, userId);
+
+    const PAGE = 1000;
+    let all: { id: string; name: string; email: string; user_id: string }[] = [];
+    let from = 0;
+    for (;;) {
+      const { data, error } = await supabaseAdmin
+        .from("companies")
+        .select("id, name, email, user_id")
+        .not("email", "is", null)
+        .range(from, from + PAGE - 1);
+      if (error) throw new Error(error.message);
+      const page = ((data ?? []) as any[]).filter((r) => r.email);
+      all = all.concat(page);
+      if (!data || data.length < PAGE) break;
+      from += PAGE;
+    }
+
+    // Map user_id → employee display name
+    const rawUsers = await listAllAuthUsers();
+    const { data: profiles } = await supabaseAdmin.from("profiles").select("user_id, display_name");
+    const nameMap: Record<string, string> = {};
+    for (const u of rawUsers) {
+      const profile = (profiles ?? []).find((p: any) => p.user_id === u.id);
+      nameMap[u.id] = (profile as any)?.display_name ?? u.email ?? u.id;
+    }
+
+    return all.map((r) => ({ id: r.id, name: r.name, email: r.email, employee: nameMap[r.user_id] ?? r.user_id }));
+  });
+
 export const deleteEmployeeFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>

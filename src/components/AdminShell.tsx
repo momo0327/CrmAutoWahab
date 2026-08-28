@@ -1,5 +1,5 @@
 import { useNavigate } from "@tanstack/react-router";
-import { LayoutDashboard, Users, UserPlus, Settings } from "lucide-react";
+import { LayoutDashboard, Users, UserPlus, Settings, Mail } from "lucide-react";
 import { useEffect, useMemo } from "react";
 import { useAuth } from "@/lib/auth";
 import { useUserRole } from "@/lib/roles";
@@ -18,6 +18,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       { to: "/admin", label: t("nav.dashboard"), icon: LayoutDashboard, exact: true },
       { to: "/admin/employees", label: t("nav.employees"), icon: Users },
       { to: "/admin/invite", label: t("nav.invite_employee"), icon: UserPlus },
+      { to: "/admin/emails", label: t("nav.emails"), icon: Mail },
       { to: "/admin/settings", label: t("nav.settings"), icon: Settings },
     ],
     [t],

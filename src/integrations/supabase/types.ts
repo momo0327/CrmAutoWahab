@@ -93,6 +93,7 @@ export type Database = {
           contact_person: string | null
           created_at: string
           custom_status_id: string | null
+          email: string | null
           fleet_size: string | null
           id: string
           last_contact: string | null
@@ -117,6 +118,7 @@ export type Database = {
           contact_person?: string | null
           created_at?: string
           custom_status_id?: string | null
+          email?: string | null
           fleet_size?: string | null
           id?: string
           last_contact?: string | null
@@ -141,6 +143,7 @@ export type Database = {
           contact_person?: string | null
           created_at?: string
           custom_status_id?: string | null
+          email?: string | null
           fleet_size?: string | null
           id?: string
           last_contact?: string | null

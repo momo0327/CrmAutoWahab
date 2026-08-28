@@ -16,6 +16,7 @@ import { Route as AdminRouteImport } from './routes/_admin'
 import { Route as AppIndexRouteImport } from './routes/_app.index'
 import { Route as AppSettingsRouteImport } from './routes/_app.settings'
 import { Route as AppKanbanRouteImport } from './routes/_app.kanban'
+import { Route as AppEmailsRouteImport } from './routes/_app.emails'
 import { Route as AppCompaniesRouteImport } from './routes/_app.companies'
 import { Route as AppCallsRouteImport } from './routes/_app.calls'
 import { Route as AppCallModeRouteImport } from './routes/_app.call-mode'
@@ -28,6 +29,7 @@ import { Route as ApiPublicElksStatusRouteImport } from './routes/api/public/elk
 import { Route as AdminAdminSettingsRouteImport } from './routes/_admin.admin.settings'
 import { Route as AdminAdminInviteRouteImport } from './routes/_admin.admin.invite'
 import { Route as AdminAdminEmployeesRouteImport } from './routes/_admin.admin.employees'
+import { Route as AdminAdminEmailsRouteImport } from './routes/_admin.admin.emails'
 import { Route as AdminAdminEmployeeIdRouteImport } from './routes/_admin.admin.$employeeId'
 
 const LoginRoute = LoginRouteImport.update({
@@ -61,6 +63,11 @@ const AppSettingsRoute = AppSettingsRouteImport.update({
 const AppKanbanRoute = AppKanbanRouteImport.update({
   id: '/kanban',
   path: '/kanban',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppEmailsRoute = AppEmailsRouteImport.update({
+  id: '/emails',
+  path: '/emails',
   getParentRoute: () => AppRoute,
 } as any)
 const AppCompaniesRoute = AppCompaniesRouteImport.update({
@@ -123,6 +130,11 @@ const AdminAdminEmployeesRoute = AdminAdminEmployeesRouteImport.update({
   path: '/employees',
   getParentRoute: () => AdminAdminRoute,
 } as any)
+const AdminAdminEmailsRoute = AdminAdminEmailsRouteImport.update({
+  id: '/emails',
+  path: '/emails',
+  getParentRoute: () => AdminAdminRoute,
+} as any)
 const AdminAdminEmployeeIdRoute = AdminAdminEmployeeIdRouteImport.update({
   id: '/$employeeId',
   path: '/$employeeId',
@@ -139,9 +151,11 @@ export interface FileRoutesByFullPath {
   '/call-mode': typeof AppCallModeRoute
   '/calls': typeof AppCallsRoute
   '/companies': typeof AppCompaniesRoute
+  '/emails': typeof AppEmailsRoute
   '/kanban': typeof AppKanbanRoute
   '/settings': typeof AppSettingsRoute
   '/admin/$employeeId': typeof AdminAdminEmployeeIdRoute
+  '/admin/emails': typeof AdminAdminEmailsRoute
   '/admin/employees': typeof AdminAdminEmployeesRoute
   '/admin/invite': typeof AdminAdminInviteRoute
   '/admin/settings': typeof AdminAdminSettingsRoute
@@ -158,9 +172,11 @@ export interface FileRoutesByTo {
   '/call-mode': typeof AppCallModeRoute
   '/calls': typeof AppCallsRoute
   '/companies': typeof AppCompaniesRoute
+  '/emails': typeof AppEmailsRoute
   '/kanban': typeof AppKanbanRoute
   '/settings': typeof AppSettingsRoute
   '/admin/$employeeId': typeof AdminAdminEmployeeIdRoute
+  '/admin/emails': typeof AdminAdminEmailsRoute
   '/admin/employees': typeof AdminAdminEmployeesRoute
   '/admin/invite': typeof AdminAdminInviteRoute
   '/admin/settings': typeof AdminAdminSettingsRoute
@@ -180,10 +196,12 @@ export interface FileRoutesById {
   '/_app/call-mode': typeof AppCallModeRoute
   '/_app/calls': typeof AppCallsRoute
   '/_app/companies': typeof AppCompaniesRoute
+  '/_app/emails': typeof AppEmailsRoute
   '/_app/kanban': typeof AppKanbanRoute
   '/_app/settings': typeof AppSettingsRoute
   '/_app/': typeof AppIndexRoute
   '/_admin/admin/$employeeId': typeof AdminAdminEmployeeIdRoute
+  '/_admin/admin/emails': typeof AdminAdminEmailsRoute
   '/_admin/admin/employees': typeof AdminAdminEmployeesRoute
   '/_admin/admin/invite': typeof AdminAdminInviteRoute
   '/_admin/admin/settings': typeof AdminAdminSettingsRoute
@@ -203,9 +221,11 @@ export interface FileRouteTypes {
     | '/call-mode'
     | '/calls'
     | '/companies'
+    | '/emails'
     | '/kanban'
     | '/settings'
     | '/admin/$employeeId'
+    | '/admin/emails'
     | '/admin/employees'
     | '/admin/invite'
     | '/admin/settings'
@@ -222,9 +242,11 @@ export interface FileRouteTypes {
     | '/call-mode'
     | '/calls'
     | '/companies'
+    | '/emails'
     | '/kanban'
     | '/settings'
     | '/admin/$employeeId'
+    | '/admin/emails'
     | '/admin/employees'
     | '/admin/invite'
     | '/admin/settings'
@@ -243,10 +265,12 @@ export interface FileRouteTypes {
     | '/_app/call-mode'
     | '/_app/calls'
     | '/_app/companies'
+    | '/_app/emails'
     | '/_app/kanban'
     | '/_app/settings'
     | '/_app/'
     | '/_admin/admin/$employeeId'
+    | '/_admin/admin/emails'
     | '/_admin/admin/employees'
     | '/_admin/admin/invite'
     | '/_admin/admin/settings'
@@ -313,6 +337,13 @@ declare module '@tanstack/react-router' {
       path: '/kanban'
       fullPath: '/kanban'
       preLoaderRoute: typeof AppKanbanRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/emails': {
+      id: '/_app/emails'
+      path: '/emails'
+      fullPath: '/emails'
+      preLoaderRoute: typeof AppEmailsRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/companies': {
@@ -399,6 +430,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAdminEmployeesRouteImport
       parentRoute: typeof AdminAdminRoute
     }
+    '/_admin/admin/emails': {
+      id: '/_admin/admin/emails'
+      path: '/emails'
+      fullPath: '/admin/emails'
+      preLoaderRoute: typeof AdminAdminEmailsRouteImport
+      parentRoute: typeof AdminAdminRoute
+    }
     '/_admin/admin/$employeeId': {
       id: '/_admin/admin/$employeeId'
       path: '/$employeeId'
@@ -411,6 +449,7 @@ declare module '@tanstack/react-router' {
 
 interface AdminAdminRouteChildren {
   AdminAdminEmployeeIdRoute: typeof AdminAdminEmployeeIdRoute
+  AdminAdminEmailsRoute: typeof AdminAdminEmailsRoute
   AdminAdminEmployeesRoute: typeof AdminAdminEmployeesRoute
   AdminAdminInviteRoute: typeof AdminAdminInviteRoute
   AdminAdminSettingsRoute: typeof AdminAdminSettingsRoute
@@ -419,6 +458,7 @@ interface AdminAdminRouteChildren {
 
 const AdminAdminRouteChildren: AdminAdminRouteChildren = {
   AdminAdminEmployeeIdRoute: AdminAdminEmployeeIdRoute,
+  AdminAdminEmailsRoute: AdminAdminEmailsRoute,
   AdminAdminEmployeesRoute: AdminAdminEmployeesRoute,
   AdminAdminInviteRoute: AdminAdminInviteRoute,
   AdminAdminSettingsRoute: AdminAdminSettingsRoute,
@@ -445,6 +485,7 @@ interface AppRouteChildren {
   AppCallModeRoute: typeof AppCallModeRoute
   AppCallsRoute: typeof AppCallsRoute
   AppCompaniesRoute: typeof AppCompaniesRoute
+  AppEmailsRoute: typeof AppEmailsRoute
   AppKanbanRoute: typeof AppKanbanRoute
   AppSettingsRoute: typeof AppSettingsRoute
   AppIndexRoute: typeof AppIndexRoute
@@ -456,6 +497,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppCallModeRoute: AppCallModeRoute,
   AppCallsRoute: AppCallsRoute,
   AppCompaniesRoute: AppCompaniesRoute,
+  AppEmailsRoute: AppEmailsRoute,
   AppKanbanRoute: AppKanbanRoute,
   AppSettingsRoute: AppSettingsRoute,
   AppIndexRoute: AppIndexRoute,
