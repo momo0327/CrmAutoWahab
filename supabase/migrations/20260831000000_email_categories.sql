@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS public.email_categories (
 
 ALTER TABLE public.email_categories ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users manage own email categories" ON public.email_categories;
 CREATE POLICY "Users manage own email categories"
   ON public.email_categories
   FOR ALL

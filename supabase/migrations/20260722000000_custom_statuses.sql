@@ -9,6 +9,7 @@ create table if not exists public.custom_statuses (
 
 alter table public.custom_statuses enable row level security;
 
+drop policy if exists "Users manage own custom statuses" on public.custom_statuses;
 create policy "Users manage own custom statuses"
   on public.custom_statuses
   for all
@@ -16,6 +17,7 @@ create policy "Users manage own custom statuses"
   with check (auth.uid() = user_id);
 
 -- Allow admins (service role) to read all custom statuses for the admin view
+drop policy if exists "Service role full access" on public.custom_statuses;
 create policy "Service role full access"
   on public.custom_statuses
   for all
