@@ -1,4 +1,5 @@
 -- Allow admins to read all call_logs so realtime subscriptions work in the admin dashboard.
+DROP POLICY IF EXISTS "Admin select all calls" ON public.call_logs;
 CREATE POLICY "Admin select all calls"
   ON public.call_logs
   FOR SELECT

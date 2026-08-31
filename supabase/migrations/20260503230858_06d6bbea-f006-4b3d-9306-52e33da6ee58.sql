@@ -7,8 +7,11 @@ CREATE TABLE public.profiles (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Profiles viewable by owner" ON public.profiles;
 CREATE POLICY "Profiles viewable by owner" ON public.profiles FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users insert own profile" ON public.profiles;
 CREATE POLICY "Users insert own profile" ON public.profiles FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users update own profile" ON public.profiles;
 CREATE POLICY "Users update own profile" ON public.profiles FOR UPDATE USING (auth.uid() = user_id);
 
 -- Status enum
@@ -35,9 +38,13 @@ CREATE TABLE public.companies (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 ALTER TABLE public.companies ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Owner select companies" ON public.companies;
 CREATE POLICY "Owner select companies" ON public.companies FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Owner insert companies" ON public.companies;
 CREATE POLICY "Owner insert companies" ON public.companies FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Owner update companies" ON public.companies;
 CREATE POLICY "Owner update companies" ON public.companies FOR UPDATE USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Owner delete companies" ON public.companies;
 CREATE POLICY "Owner delete companies" ON public.companies FOR DELETE USING (auth.uid() = user_id);
 CREATE INDEX idx_companies_user ON public.companies(user_id);
 CREATE INDEX idx_companies_status ON public.companies(user_id, status);
@@ -52,8 +59,11 @@ CREATE TABLE public.call_logs (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 ALTER TABLE public.call_logs ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Owner select calls" ON public.call_logs;
 CREATE POLICY "Owner select calls" ON public.call_logs FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Owner insert calls" ON public.call_logs;
 CREATE POLICY "Owner insert calls" ON public.call_logs FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Owner delete calls" ON public.call_logs;
 CREATE POLICY "Owner delete calls" ON public.call_logs FOR DELETE USING (auth.uid() = user_id);
 CREATE INDEX idx_calls_company ON public.call_logs(company_id, created_at DESC);
 

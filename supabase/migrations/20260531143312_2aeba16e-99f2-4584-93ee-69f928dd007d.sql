@@ -17,10 +17,15 @@ GRANT ALL ON public.scheduled_calls TO service_role;
 
 ALTER TABLE public.scheduled_calls ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Owner select scheduled_calls" ON public.scheduled_calls;
 CREATE POLICY "Owner select scheduled_calls" ON public.scheduled_calls FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Owner insert scheduled_calls" ON public.scheduled_calls;
 CREATE POLICY "Owner insert scheduled_calls" ON public.scheduled_calls FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Owner update scheduled_calls" ON public.scheduled_calls;
 CREATE POLICY "Owner update scheduled_calls" ON public.scheduled_calls FOR UPDATE USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Owner delete scheduled_calls" ON public.scheduled_calls;
 CREATE POLICY "Owner delete scheduled_calls" ON public.scheduled_calls FOR DELETE USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Admins view all scheduled_calls" ON public.scheduled_calls;
 CREATE POLICY "Admins view all scheduled_calls" ON public.scheduled_calls FOR SELECT USING (has_role(auth.uid(), 'admin'::app_role));
 
 CREATE INDEX idx_scheduled_calls_user_time ON public.scheduled_calls(user_id, scheduled_at);
@@ -43,10 +48,15 @@ GRANT ALL ON public.archive_folders TO service_role;
 
 ALTER TABLE public.archive_folders ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Owner select archive_folders" ON public.archive_folders;
 CREATE POLICY "Owner select archive_folders" ON public.archive_folders FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Owner insert archive_folders" ON public.archive_folders;
 CREATE POLICY "Owner insert archive_folders" ON public.archive_folders FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Owner update archive_folders" ON public.archive_folders;
 CREATE POLICY "Owner update archive_folders" ON public.archive_folders FOR UPDATE USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Owner delete archive_folders" ON public.archive_folders;
 CREATE POLICY "Owner delete archive_folders" ON public.archive_folders FOR DELETE USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Admins view all archive_folders" ON public.archive_folders;
 CREATE POLICY "Admins view all archive_folders" ON public.archive_folders FOR SELECT USING (has_role(auth.uid(), 'admin'::app_role));
 
 -- Add archive folder ref to companies

@@ -27,18 +27,22 @@ AS $$
 $$;
 
 -- 4. RLS on user_roles: users can read their own; admins can read all
+DROP POLICY IF EXISTS "Users can view own roles" ON public.user_roles;
 CREATE POLICY "Users can view own roles"
   ON public.user_roles FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Admins can view all roles" ON public.user_roles;
 CREATE POLICY "Admins can view all roles"
   ON public.user_roles FOR SELECT
   USING (public.has_role(auth.uid(), 'admin'));
 
+DROP POLICY IF EXISTS "Admins can insert roles" ON public.user_roles;
 CREATE POLICY "Admins can insert roles"
   ON public.user_roles FOR INSERT
   WITH CHECK (public.has_role(auth.uid(), 'admin'));
 
+DROP POLICY IF EXISTS "Admins can delete roles" ON public.user_roles;
 CREATE POLICY "Admins can delete roles"
   ON public.user_roles FOR DELETE
   USING (public.has_role(auth.uid(), 'admin'));
@@ -71,15 +75,18 @@ SELECT id, 'user'::public.app_role FROM auth.users
 ON CONFLICT DO NOTHING;
 
 -- 6. Admin-wide visibility on companies and call_logs
+DROP POLICY IF EXISTS "Admins view all companies" ON public.companies;
 CREATE POLICY "Admins view all companies"
   ON public.companies FOR SELECT
   USING (public.has_role(auth.uid(), 'admin'));
 
+DROP POLICY IF EXISTS "Admins view all call_logs" ON public.call_logs;
 CREATE POLICY "Admins view all call_logs"
   ON public.call_logs FOR SELECT
   USING (public.has_role(auth.uid(), 'admin'));
 
 -- 7. Admins can view all profiles (for showing employee names)
+DROP POLICY IF EXISTS "Admins view all profiles" ON public.profiles;
 CREATE POLICY "Admins view all profiles"
   ON public.profiles FOR SELECT
   USING (public.has_role(auth.uid(), 'admin'));
