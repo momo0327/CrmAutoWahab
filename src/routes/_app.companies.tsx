@@ -16,7 +16,7 @@ import { CompanyStatusBadge } from "@/components/CompanyStatusBadge";
 import { useCustomStatuses } from "@/lib/custom-statuses";
 import { CompaniesSkeleton } from "@/components/PageSkeletons";
 import { researchCompanyFn, deleteCompaniesFn } from "@/lib/research.functions";
-import { Plus, Loader2, Sparkles, Search, UserPlus, Trash2, Archive as ArchiveIcon } from "lucide-react";
+import { Plus, Loader2, Sparkles, Search, UserPlus, Trash2, Archive as ArchiveIcon, SlidersHorizontal, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/companies")({ component: CompaniesPage });
@@ -36,6 +36,8 @@ function CompaniesPage() {
   const { customStatuses } = useCustomStatuses();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [visibleCount, setVisibleCount] = useState(100);
+  const [truckSort, setTruckSort] = useState<"most" | "least" | null>(null);
+  const [truckSortOpen, setTruckSortOpen] = useState(false);
   const research = useServerFn(researchCompanyFn);
   const deleteMany = useServerFn(deleteCompaniesFn);
 
@@ -44,24 +46,37 @@ function CompaniesPage() {
     {} as Record<Status, number>,
   );
 
-  const filtered = useMemo(() => companies.filter((c) => {
-    let matchesStatus = false;
-    if (statusFilter === "all") {
-      matchesStatus = true;
-    } else if (statusFilter.startsWith("custom:")) {
-      matchesStatus = c.custom_status_id === statusFilter.slice(7);
-    } else {
-      matchesStatus = c.status === statusFilter && !c.custom_status_id;
+  const filtered = useMemo(() => {
+    let result = companies.filter((c) => {
+      let matchesStatus = false;
+      if (statusFilter === "all") {
+        matchesStatus = true;
+      } else if (statusFilter.startsWith("custom:")) {
+        matchesStatus = c.custom_status_id === statusFilter.slice(7);
+      } else {
+        matchesStatus = c.status === statusFilter && !c.custom_status_id;
+      }
+      const matchesSearch =
+        !q ||
+        c.name.toLowerCase().includes(q.toLowerCase()) ||
+        c.org_number?.includes(q);
+      return matchesStatus && matchesSearch;
+    });
+
+    if (truckSort) {
+      result = [...result].sort((a, b) => {
+        const countTrucks = (c: typeof a) =>
+          ((c.vehicles as any[]) ?? []).filter((v: any) => v.type?.toLowerCase() === "lastbil").length;
+        const diff = countTrucks(b) - countTrucks(a);
+        return truckSort === "most" ? diff : -diff;
+      });
     }
-    const matchesSearch =
-      !q ||
-      c.name.toLowerCase().includes(q.toLowerCase()) ||
-      c.org_number?.includes(q);
-    return matchesStatus && matchesSearch;
-  }), [companies, statusFilter, q]);
+
+    return result;
+  }, [companies, statusFilter, q, truckSort]);
 
   // Reset window when filters change so we don't render a stale large slice.
-  useEffect(() => { setVisibleCount(100); }, [statusFilter, q]);
+  useEffect(() => { setVisibleCount(100); }, [statusFilter, q, truckSort]);
 
   const visible = useMemo(() => filtered.slice(0, visibleCount), [filtered, visibleCount]);
 
@@ -127,8 +142,13 @@ function CompaniesPage() {
                   if (!confirm(`Delete ${selectedIds.size} selected companies?`)) return;
                   const ids = Array.from(selectedIds);
                   try {
-                    const res = await deleteMany({ data: { ids } });
-                    toast.success(`Deleted ${res.deleted} companies`);
+                    const CHUNK = 500;
+                    let deleted = 0;
+                    for (let i = 0; i < ids.length; i += CHUNK) {
+                      const res = await deleteMany({ data: { ids: ids.slice(i, i + CHUNK) } });
+                      deleted += res.deleted;
+                    }
+                    toast.success(`Deleted ${deleted} companies`);
                     setSelectedIds(new Set());
                     removeCompanies(ids);
                   } catch (e: any) {
@@ -219,14 +239,60 @@ function CompaniesPage() {
           })}
         </div>
 
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-          <input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Search by name or org number…"
-            className="w-full max-w-md pl-9 pr-3 py-2 rounded-md border bg-card text-sm"
-          />
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+            <input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Search by name or org number…"
+              className="w-full max-w-md pl-9 pr-3 py-2 rounded-md border bg-card text-sm"
+            />
+          </div>
+
+          {/* Lastbil sort filter */}
+          <div className="relative">
+            <button
+              onClick={() => setTruckSortOpen((o) => !o)}
+              className={`inline-flex items-center gap-2 px-3 py-2 rounded-md border text-sm transition-colors ${truckSort ? "bg-primary text-primary-foreground border-primary" : "bg-card hover:bg-muted"}`}
+            >
+              <SlidersHorizontal className="size-4" />
+              {truckSort === "most" ? "Most lastbilar" : truckSort === "least" ? "Fewest lastbilar" : "Lastbilar"}
+              <ChevronDown className="size-3.5" />
+            </button>
+            {truckSortOpen && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setTruckSortOpen(false)} />
+                <div className="absolute left-0 mt-1 z-50 w-52 rounded-md border bg-popover shadow-md overflow-hidden">
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground px-3 py-2">Sort by lastbilar</p>
+                  {([
+                    { value: "most", label: "Most lastbilar first" },
+                    { value: "least", label: "Fewest lastbilar first" },
+                  ] as const).map((opt) => (
+                    <button
+                      key={opt.value}
+                      onClick={() => { setTruckSort(truckSort === opt.value ? null : opt.value); setTruckSortOpen(false); }}
+                      className={`w-full flex items-center justify-between px-3 py-2 text-sm hover:bg-muted text-left ${truckSort === opt.value ? "font-semibold" : ""}`}
+                    >
+                      {opt.label}
+                      {truckSort === opt.value && <span className="text-xs text-muted-foreground">✓</span>}
+                    </button>
+                  ))}
+                  {truckSort && (
+                    <>
+                      <div className="border-t" />
+                      <button
+                        onClick={() => { setTruckSort(null); setTruckSortOpen(false); }}
+                        className="w-full px-3 py-2 text-sm hover:bg-muted text-left text-muted-foreground"
+                      >
+                        Clear sort
+                      </button>
+                    </>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
 

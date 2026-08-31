@@ -85,6 +85,30 @@ export type Database = {
           },
         ]
       }
+      email_categories: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          label: string
+          user_id: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          id?: string
+          label: string
+          user_id: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          label?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       companies: {
         Row: {
           address: string | null
@@ -94,6 +118,7 @@ export type Database = {
           created_at: string
           custom_status_id: string | null
           email: string | null
+          email_category_id: string | null
           fleet_size: string | null
           id: string
           last_contact: string | null
@@ -119,6 +144,7 @@ export type Database = {
           created_at?: string
           custom_status_id?: string | null
           email?: string | null
+          email_category_id?: string | null
           fleet_size?: string | null
           id?: string
           last_contact?: string | null
@@ -144,6 +170,7 @@ export type Database = {
           created_at?: string
           custom_status_id?: string | null
           email?: string | null
+          email_category_id?: string | null
           fleet_size?: string | null
           id?: string
           last_contact?: string | null

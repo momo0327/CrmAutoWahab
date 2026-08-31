@@ -15,6 +15,8 @@ import {
   Copy,
   Check,
   ChevronDown,
+  Mail,
+  Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { PhoneButtons } from "@/components/PhoneButtons";
@@ -233,6 +235,7 @@ function CallModePage() {
               <CompanyCard
                 key={company.id}
                 company={company}
+                customStatuses={customStatuses}
                 onCompanyChange={(c) => upsertCompany(c)}
               />
             )}
@@ -269,9 +272,11 @@ function CopyButton({ text }: { text: string }) {
 
 function CompanyCard({
   company: initial,
+  customStatuses,
   onCompanyChange,
 }: {
   company: Company;
+  customStatuses: { id: string; label: string; color: string }[];
   onCompanyChange: (c: Company) => void;
 }) {
   const [company, setCompany] = useState(initial);
@@ -282,10 +287,22 @@ function CompanyCard({
   const [schedTime, setSchedTime] = useState("09:00");
   const [savingNotes, setSavingNotes] = useState(false);
 
+  // Email state
+  const [email, setEmail] = useState((initial as any).email ?? "");
+  const [emailFocused, setEmailFocused] = useState(false);
+  const [savingEmail, setSavingEmail] = useState(false);
+
+  // Custom phone state
+  const [newPhone, setNewPhone] = useState("");
+  const [savingPhone, setSavingPhone] = useState(false);
+
   // Reset when company changes
   useEffect(() => {
     setCompany(initial);
     setNotes(initial.notes ?? "");
+    setEmail((initial as any).email ?? "");
+    setEmailFocused(false);
+    setNewPhone("");
     setSchedTitle("Call");
     setSchedDate(new Date());
     setSchedTime("09:00");
@@ -296,7 +313,7 @@ function CompanyCard({
     const wasNew = company.status === "new" && !company.custom_status_id;
     const { data, error } = await supabase
       .from("companies")
-      .update({ status, last_contact: new Date().toISOString() })
+      .update({ status, custom_status_id: null, last_contact: new Date().toISOString() })
       .eq("id", company.id)
       .select()
       .single();
@@ -352,6 +369,48 @@ function CompanyCard({
     }
   }
 
+  async function changeCustomStatus(customStatusId: string, label: string) {
+    const { data, error } = await supabase
+      .from("companies")
+      .update({ custom_status_id: customStatusId, last_contact: new Date().toISOString() })
+      .eq("id", company.id)
+      .select()
+      .single();
+    if (error) return toast.error(error.message, { position: "bottom-right" });
+    const row = data as Company;
+    setCompany(row);
+    onCompanyChange(row);
+    toast.success(`Status: ${label}`, { position: "bottom-right" });
+  }
+
+  async function saveEmail() {
+    setEmailFocused(false);
+    if (email === ((company as any).email ?? "")) return;
+    setSavingEmail(true);
+    const { error } = await supabase.from("companies").update({ email: email.trim() || null }).eq("id", company.id);
+    setSavingEmail(false);
+    if (error) return toast.error(error.message, { position: "bottom-right" });
+    const updated = { ...company, email: email.trim() || null } as any;
+    setCompany(updated);
+    onCompanyChange(updated);
+    toast.success("Email saved", { position: "bottom-right" });
+  }
+
+  async function addPhone() {
+    const trimmed = newPhone.trim();
+    if (!trimmed) return;
+    setSavingPhone(true);
+    const phones = [...(company.phones ?? []), trimmed];
+    const { data, error } = await supabase.from("companies").update({ phones }).eq("id", company.id).select().single();
+    setSavingPhone(false);
+    if (error) return toast.error(error.message, { position: "bottom-right" });
+    const row = data as Company;
+    setCompany(row);
+    onCompanyChange(row);
+    setNewPhone("");
+    toast.success("Phone number added", { position: "bottom-right" });
+  }
+
   const researchPhones = (company.research_raw as any)?.phones as string[] | undefined;
   const vehicles = (company.vehicles as unknown) as Vehicle[] | undefined;
 
@@ -396,17 +455,60 @@ function CompanyCard({
               contactName={company.name}
             />
           </div>
-          {(company as any).email && (
-            <div className="mt-2 flex items-center gap-1.5">
-              <span className="text-xs text-muted-foreground truncate flex-1">{(company as any).email}</span>
-              <button
-                onClick={() => { navigator.clipboard.writeText((company as any).email); toast.success("Email copied", { position: "bottom-right" }); }}
-                className="px-2.5 py-1 rounded-md border bg-background text-xs hover:bg-muted transition-colors shrink-0"
-              >
-                Copy
-              </button>
-            </div>
-          )}
+
+          {/* Add custom phone number */}
+          <div className="mt-2 flex gap-1.5">
+            <input
+              type="tel"
+              value={newPhone}
+              onChange={(e) => setNewPhone(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") addPhone(); }}
+              placeholder="Add phone number…"
+              className="flex-1 px-2.5 py-1 rounded-md border bg-background text-xs focus:outline-none focus:ring-1 focus:ring-ring"
+            />
+            <button
+              onClick={addPhone}
+              disabled={!newPhone.trim() || savingPhone}
+              className="px-2.5 py-1 rounded-md border bg-background text-xs hover:bg-muted disabled:opacity-40 transition-colors shrink-0 inline-flex items-center gap-1"
+            >
+              {savingPhone ? <Loader2 className="size-3 animate-spin" /> : <Plus className="size-3" />}
+              Add
+            </button>
+          </div>
+
+          {/* Email */}
+          <div className="mt-2">
+            {email.trim() && !emailFocused ? (
+              <div className="flex items-center gap-1.5">
+                <Mail className="size-3.5 text-muted-foreground shrink-0" />
+                <span
+                  className="text-xs truncate flex-1 cursor-text"
+                  onClick={() => setEmailFocused(true)}
+                >
+                  {email}
+                </span>
+                <CopyButton text={email} />
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5">
+                <div className="relative flex-1">
+                  <Mail className="absolute left-2 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground pointer-events-none" />
+                  <input
+                    autoFocus={emailFocused}
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    onFocus={() => setEmailFocused(true)}
+                    onBlur={saveEmail}
+                    onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+                    placeholder="Add email address…"
+                    className="w-full pl-7 pr-2 py-1 rounded-md border bg-background text-xs focus:outline-none focus:ring-1 focus:ring-ring"
+                  />
+                </div>
+                {savingEmail && <Loader2 className="size-3.5 animate-spin text-muted-foreground shrink-0" />}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Status change */}
@@ -426,6 +528,17 @@ function CompanyCard({
                 </button>
               );
             })}
+            {customStatuses.map((cs) => (
+              <button
+                key={cs.id}
+                onClick={() => changeCustomStatus(cs.id, cs.label)}
+                className="inline-flex items-center gap-1.5 text-[11px] font-medium tracking-[0.12em] uppercase px-3 py-1.5 rounded-full border transition-colors hover:opacity-80 cursor-pointer"
+                style={{ borderColor: cs.color + "66", color: cs.color, backgroundColor: cs.color + "1a" }}
+              >
+                <span className="size-1.5 rounded-full" style={{ backgroundColor: cs.color }} />
+                {cs.label}
+              </button>
+            ))}
           </div>
         </div>
 
