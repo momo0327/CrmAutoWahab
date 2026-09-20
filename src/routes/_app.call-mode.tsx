@@ -49,11 +49,25 @@ function saveAutoAnswers(list: string[]) {
 
 // ─── Page ──────────────────────────────────────────────────────────────────────
 
+const CALL_MODE_STATUS_KEY = "call_mode_last_status";
+const CALL_MODE_COMPANY_KEY = "call_mode_last_company";
+
 function CallModePage() {
   const { companies, upsertCompany } = useCompanies();
   const { customStatuses } = useCustomStatuses();
-  const [selectedStatus, setSelectedStatus] = useState<Status | `custom:${string}`>("new");
+  const [selectedStatus, setSelectedStatus] = useState<Status | `custom:${string}`>(() => {
+    try {
+      return (localStorage.getItem(CALL_MODE_STATUS_KEY) as Status | `custom:${string}`) || "new";
+    } catch {
+      return "new";
+    }
+  });
   const [statusOpen, setStatusOpen] = useState(false);
+
+  function selectStatus(s: Status | `custom:${string}`) {
+    setSelectedStatus(s);
+    try { localStorage.setItem(CALL_MODE_STATUS_KEY, s); } catch {}
+  }
 
   // Snapshot the queue when status or companies first load
   const [queue, setQueue] = useState<Company[]>([]);
@@ -63,7 +77,14 @@ function CallModePage() {
         ? companies.filter((c) => c.custom_status_id === selectedStatus.slice(7))
         : companies.filter((c) => c.status === selectedStatus && !c.custom_status_id);
       setQueue(filtered);
-      setIdx(0);
+      // Restore last company position by ID
+      try {
+        const lastId = localStorage.getItem(CALL_MODE_COMPANY_KEY);
+        const restored = lastId ? filtered.findIndex((c) => c.id === lastId) : -1;
+        setIdx(restored > 0 ? restored : 0);
+      } catch {
+        setIdx(0);
+      }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedStatus, companies.length]);
@@ -87,6 +108,13 @@ function CallModePage() {
   const touchStartX = useRef<number | null>(null);
 
   const company = queue[idx] ?? null;
+
+  // Persist last company ID whenever it changes
+  useEffect(() => {
+    if (company?.id) {
+      try { localStorage.setItem(CALL_MODE_COMPANY_KEY, company.id); } catch {}
+    }
+  }, [company?.id]);
 
   function navigate(dir: "left" | "right") {
     if (animating) return;
@@ -147,7 +175,7 @@ function CallModePage() {
                     return (
                       <button
                         key={s}
-                        onClick={() => { setSelectedStatus(s); setStatusOpen(false); }}
+                        onClick={() => { selectStatus(s); setStatusOpen(false); }}
                         className={`w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition-colors text-left ${selectedStatus === s ? "font-semibold" : ""}`}
                       >
                         <span className={`size-2 rounded-full ${m.dot}`} />
@@ -165,7 +193,7 @@ function CallModePage() {
                         return (
                           <button
                             key={cs.id}
-                            onClick={() => { setSelectedStatus(key); setStatusOpen(false); }}
+                            onClick={() => { selectStatus(key); setStatusOpen(false); }}
                             className={`w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition-colors text-left ${selectedStatus === key ? "font-semibold" : ""}`}
                           >
                             <span className="size-2 rounded-full" style={{ backgroundColor: cs.color }} />
@@ -310,7 +338,6 @@ function CompanyCard({
   }, [initial.id]);
 
   async function changeStatus(status: Status) {
-    const wasNew = company.status === "new" && !company.custom_status_id;
     const { data, error } = await supabase
       .from("companies")
       .update({ status, custom_status_id: null, last_contact: new Date().toISOString() })
@@ -322,11 +349,14 @@ function CompanyCard({
     setCompany(row);
     onCompanyChange(row);
     toast.success(`Status: ${STATUS_META[status].label}`, { position: "bottom-right" });
-    if (wasNew) {
-      const { data: u } = await supabase.auth.getUser();
-      if (u.user) {
-        await supabase.from("call_logs").insert({ company_id: company.id, user_id: u.user.id, outcome: "status_change", note: "" });
-      }
+    const { data: u } = await supabase.auth.getUser();
+    if (u.user) {
+      await supabase.from("call_logs").insert({
+        company_id: company.id,
+        user_id: u.user.id,
+        outcome: "status_change",
+        note: `Status changed to ${STATUS_META[status].label}`,
+      });
     }
   }
 
@@ -381,6 +411,15 @@ function CompanyCard({
     setCompany(row);
     onCompanyChange(row);
     toast.success(`Status: ${label}`, { position: "bottom-right" });
+    const { data: u } = await supabase.auth.getUser();
+    if (u.user) {
+      await supabase.from("call_logs").insert({
+        company_id: company.id,
+        user_id: u.user.id,
+        outcome: "status_change",
+        note: `Status changed to ${label}`,
+      });
+    }
   }
 
   async function saveEmail() {

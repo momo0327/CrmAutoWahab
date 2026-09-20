@@ -15,9 +15,7 @@ type SortKey = keyof Vehicle;
 
 export function VehiclesTable({ vehicles }: { vehicles: Vehicle[] }) {
   const [q, setQ] = useState("");
-  const [typeFilter, setTypeFilter] = useState<string>(() =>
-    vehicles.some((v) => v.type === "lastbil") ? "lastbil" : "",
-  );
+  const [typeFilter, setTypeFilter] = useState<string>("lastbil");
   const [brandFilter, setBrandFilter] = useState<string>("");
   const [fuelFilter, setFuelFilter] = useState<string>("");
   const [sortKey, setSortKey] = useState<SortKey>("registration");
@@ -105,16 +103,10 @@ export function VehiclesTable({ vehicles }: { vehicles: Vehicle[] }) {
             className="w-full pl-7 pr-2 py-1.5 rounded-md border bg-background text-xs"
           />
         </div>
-        {types.length > 1 && (
+        {types.length > 0 && (
           <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className="text-xs px-2 py-1.5 rounded-md border bg-background">
             <option value="">All types</option>
             {types.map((t) => <option key={t} value={t}>{t}</option>)}
-          </select>
-        )}
-        {brands.length > 1 && (
-          <select value={brandFilter} onChange={(e) => setBrandFilter(e.target.value)} className="text-xs px-2 py-1.5 rounded-md border bg-background">
-            <option value="">All brands</option>
-            {brands.map((b) => <option key={b} value={b}>{b}</option>)}
           </select>
         )}
         {fuels.length > 1 && (

@@ -147,6 +147,18 @@ export async function fetchEmployeeDetail(employeeId: string) {
       .order("last_contact", { ascending: false, nullsFirst: false }),
   );
 
+  // Build company name map for enriching call logs
+  const companyNameMap = new Map<string, string>();
+  for (const c of companies) companyNameMap.set(c.id, c.name);
+
+  // Also look up company names for any call_log company_ids not in this employee's companies
+  const callRows = calls ?? [];
+  const missingIds = Array.from(new Set(callRows.map((c: any) => c.company_id).filter((id: any) => id && !companyNameMap.has(id))));
+  if (missingIds.length > 0) {
+    const { data: extra } = await supabaseAdmin.from("companies").select("id,name").in("id", missingIds);
+    for (const c of (extra ?? [])) companyNameMap.set(c.id, c.name);
+  }
+
   return {
     employee: {
       id: employeeId,
@@ -155,7 +167,7 @@ export async function fetchEmployeeDetail(employeeId: string) {
       phoneNumber: profile?.phone_number ?? null,
     },
     companies,
-    calls: calls ?? [],
+    calls: callRows.map((c: any) => ({ ...c, companyName: c.company_id ? (companyNameMap.get(c.company_id) ?? null) : null })),
     customStatuses: customStatuses ?? [],
   };
 }

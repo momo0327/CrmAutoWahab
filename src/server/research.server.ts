@@ -20,6 +20,7 @@ export type ResearchResult = {
   address?: string;
   vehicles: Vehicle[];
   sources: string[];
+  fordonMd?: string;
   debug?: { query: string; contextChars: number; toolCallRaw?: string };
 };
 
@@ -87,33 +88,60 @@ function extractSwedishPhones(text: string): string[] {
 }
 
 function parseMerinfoVehicles(md: string): Vehicle[] {
+  // Merinfo renders each vehicle as an inline summary line:
+  //   "Brand Model\nREG12X · Color · type · year\n[Visa fordonsinfo](url)"
+  // We parse by finding the inline "REG · color · type · year" lines
+  // which always appear just before a [Visa fordonsinfo] link.
+
   const vehicles: Vehicle[] = [];
-  const blocks = md.split(/\[Se fullständig fordonsinfo\][^\n]*/i);
-  for (const block of blocks) {
-    const lines = block
-      .split("\n")
-      .map((l) => l.trim().replace(/,$/, "").trim())
-      .filter((l) => l.length > 0 && !/^#|^!\[|^\[|^-\s|^\*\s/.test(l));
-    const regIdx = lines.findIndex((l) => /^[A-ZÅÄÖ]{3}\d{2}[A-Z0-9]$|^[A-ZÅÄÖ]{3}\d{3}$/.test(l));
-    if (regIdx < 1) continue;
-    const brandModel = lines[regIdx - 1];
-    const reg = lines[regIdx];
-    const color = lines[regIdx + 1];
-    const type = lines[regIdx + 2];
-    const year = lines[regIdx + 3];
-    if (!brandModel || !reg) continue;
-    const parts = brandModel.split(/\s+/);
-    const brand = parts[0];
-    const model = parts.slice(1).join(" ") || undefined;
-    vehicles.push({
-      registration: reg,
-      brand,
-      model,
-      type: type && /^[a-zåäö ]+$/i.test(type) ? type.toLowerCase() : undefined,
-      year: year && /^(19|20)\d{2}$/.test(year) ? year : undefined,
-    });
+
+  // Parse the compact inline summary line merinfo renders per vehicle:
+  // "REG · Color · type · year"  e.g. "DAF23P · Vit · lätt lastbil · 2026"
+  // Brand+model is found by looking backward a few lines from the summary.
+
+  const lines = md.split("\n").map((l) => l.trim());
+
+  for (let i = 0; i < lines.length; i++) {
+    const l = lines[i];
+
+    // Format 1: inline summary "REG · color · type · year"
+    const inlineMatch = l.match(/^([A-ZÅÄÖ]{2,3}\d{2,3}[A-Z0-9]?)\s*·\s*([^·\n]+?)\s*·\s*([^·\n]+?)\s*·\s*((?:19|20)\d{2})$/i);
+    if (inlineMatch) {
+      const reg = inlineMatch[1].toUpperCase();
+      // inlineMatch[2] = color (ignored), inlineMatch[3] = type, inlineMatch[4] = year
+      const type = inlineMatch[3].trim().toLowerCase();
+      const year = inlineMatch[4].trim();
+
+      // The brand+model header is the line just before this block's "[Visa fordonsinfo]"
+      // Look backward for "Brand Model" line (contains a capital letter, not a reg plate)
+      let brand: string | undefined;
+      let model: string | undefined;
+      for (let j = i - 1; j >= Math.max(0, i - 5); j--) {
+        const prev = lines[j];
+        if (!prev || /^\[|^#|^!\[|^Se |^Visa/.test(prev)) continue;
+        // Skip pure registration lines
+        if (/^[A-ZÅÄÖ]{2,3}\d{2,3}[A-Z0-9]?$/.test(prev)) continue;
+        // Skip color-only lines (single word starting with capital)
+        if (/^[A-ZÅÄÖ][a-zåäö]+$/.test(prev) && prev.split(" ").length === 1) continue;
+        // This should be the brand model header
+        const parts = prev.replace(/\s*\(\d{4}\)$/, "").trim().split(/\s+/);
+        brand = parts[0] || undefined;
+        model = parts.slice(1).join(" ") || undefined;
+        break;
+      }
+
+      vehicles.push({ registration: reg, brand, model, type, year });
+      continue;
+    }
   }
-  return vehicles;
+
+  // Dedupe by registration — keep first occurrence
+  const seen = new Set<string>();
+  return vehicles.filter((v) => {
+    if (!v.registration || seen.has(v.registration)) return false;
+    seen.add(v.registration);
+    return true;
+  });
 }
 
 const NOISE_WORDS = ["behandlingen", "personuppgifter", "dataskydd", "integritetspolicy", "cookies", "samtycke", "tillgänglig", "närvarande", "teckna", "firman", "rätt", "bolaget", "aktier", "registrerad"];
@@ -258,9 +286,13 @@ export async function researchCompany(name: string, orgNumber?: string | null): 
       parsedVehicles.push(...page1Vehicles);
       allMd += fordon1Md;
 
-      if (page1Vehicles.length >= 25 && (expectedTotal === 0 || parsedVehicles.length < expectedTotal)) {
+      const needsMorePages = expectedTotal > 0
+        ? parsedVehicles.length < expectedTotal
+        : page1Vehicles.length >= 20; // fetch more if page 1 looks full
+
+      if (needsMorePages) {
         const remainingPages = expectedTotal > 0
-          ? Math.min(Math.ceil((expectedTotal - parsedVehicles.length) / 25), 19)
+          ? Math.min(Math.ceil((expectedTotal - parsedVehicles.length) / 25) + 1, 19)
           : 19;
 
         for (let page = 2; page <= remainingPages + 1; page++) {
@@ -320,6 +352,7 @@ export async function researchCompany(name: string, orgNumber?: string | null): 
     address,
     vehicles: parsedVehicles,
     sources,
+    fordonMd: allMd.slice(0, 8000),
     debug: { query, contextChars: context.length },
   };
 }

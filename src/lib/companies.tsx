@@ -126,10 +126,22 @@ export function useCompanies() {
 }
 
 export async function updateStatus(id: string, status: Status) {
-  return supabase
+  const result = await supabase
     .from("companies")
-    .update({ status, last_contact: new Date().toISOString() })
+    .update({ status, custom_status_id: null, last_contact: new Date().toISOString() })
     .eq("id", id)
     .select()
     .single();
+  if (!result.error) {
+    const { data: u } = await supabase.auth.getUser();
+    if (u.user) {
+      await supabase.from("call_logs").insert({
+        company_id: id,
+        user_id: u.user.id,
+        outcome: "status_change",
+        note: `Status changed to ${STATUS_META[status].label}`,
+      });
+    }
+  }
+  return result;
 }

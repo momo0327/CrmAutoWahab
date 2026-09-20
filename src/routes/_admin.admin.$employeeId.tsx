@@ -7,7 +7,7 @@ import { getEmployeeDetailFn, deleteEmployeeFn } from "@/lib/admin.functions";
 import { STATUS_META, STATUS_ORDER, type Company, type Status } from "@/lib/companies";
 import { PhoneButtons } from "@/components/PhoneButtons";
 import { CompanyDrawer } from "@/components/CompanyDrawer";
-import { ArrowLeft, Mail, Phone, Building2, PhoneCall, Trash2 } from "lucide-react";
+import { ArrowLeft, Mail, Phone, Building2, PhoneCall, Trash2, RefreshCw } from "lucide-react";
 
 export const Route = createFileRoute("/_admin/admin/$employeeId")({
   component: EmployeeDetail,
@@ -296,32 +296,47 @@ function EmployeeDetail() {
             <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
               <tr>
                 <th className="text-left px-4 py-3 text-[11px] font-medium tracking-[0.18em] uppercase">When</th>
-                <th className="text-left px-4 py-3 text-[11px] font-medium tracking-[0.18em] uppercase">Number</th>
-                <th className="text-left px-4 py-3 text-[11px] font-medium tracking-[0.18em] uppercase">Direction</th>
+                <th className="text-left px-4 py-3 text-[11px] font-medium tracking-[0.18em] uppercase">Company</th>
+                <th className="text-left px-4 py-3 text-[11px] font-medium tracking-[0.18em] uppercase">Type</th>
                 <th className="text-left px-4 py-3 text-[11px] font-medium tracking-[0.18em] uppercase">Duration</th>
                 <th className="text-left px-4 py-3 text-[11px] font-medium tracking-[0.18em] uppercase">Status</th>
                 <th className="text-left px-4 py-3 text-[11px] font-medium tracking-[0.18em] uppercase">Note</th>
               </tr>
             </thead>
             <tbody className="divide-y">
-              {calls.map((c) => (
-                <tr key={c.id} className="hover:bg-muted/30">
-                  <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
-                    {new Date(c.created_at).toLocaleString()}
-                  </td>
-                  <td className="px-4 py-3">{c.to_number ?? "—"}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{c.direction ?? "—"}</td>
-                  <td className="px-4 py-3 text-muted-foreground">
-                    {c.duration ? `${c.duration}s` : "—"}
-                  </td>
-                  <td className="px-4 py-3">
-                    <StatusBadge status={c.status} outcome={c.outcome} />
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground text-xs max-w-md truncate">
-                    {c.note || "—"}
-                  </td>
-                </tr>
-              ))}
+              {(calls as any[]).map((c) => {
+                const isStatusChange = c.outcome === "status_change";
+                return (
+                  <tr key={c.id} className="hover:bg-muted/30">
+                    <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
+                      {new Date(c.created_at).toLocaleString()}
+                    </td>
+                    <td className="px-4 py-3 text-sm font-medium truncate max-w-[180px]">
+                      {c.companyName ?? "—"}
+                    </td>
+                    <td className="px-4 py-3">
+                      {isStatusChange ? (
+                        <span className="inline-flex items-center gap-1.5 text-[11px] px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+                          <RefreshCw className="size-3" /> Status change
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground text-xs">
+                          {c.direction === "inbound" ? "Inbound" : "Outbound"}
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground">
+                      {isStatusChange ? "—" : c.duration ? `${c.duration}s` : "—"}
+                    </td>
+                    <td className="px-4 py-3">
+                      <StatusBadge status={c.status} outcome={c.outcome} />
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground text-xs max-w-md truncate">
+                      {c.note || "—"}
+                    </td>
+                  </tr>
+                );
+              })}
               {calls.length === 0 && (
                 <tr>
                   <td colSpan={6} className="px-4 py-12 text-center text-muted-foreground text-sm">
@@ -371,6 +386,9 @@ function TabButton({
 }
 
 function StatusBadge({ status, outcome }: { status: string | null; outcome: string | null }) {
+  if (outcome === "status_change") {
+    return <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary">Status change</span>;
+  }
   const resolved = outcome ?? status;
   const tone =
     resolved === "answered" || resolved === "success"

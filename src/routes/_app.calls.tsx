@@ -4,6 +4,7 @@ import {
   PhoneIncoming,
   PhoneOutgoing,
   PhoneMissed,
+  RefreshCw,
   Search,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -273,22 +274,25 @@ function CallsHistoryPage() {
                   </td>
                 </tr>
                 {rows.map((c) => {
+                  const isStatusChange = c.outcome === "status_change";
                   const isOutbound = c.direction !== "inbound";
                   const answered = isAnswered(c);
                   const notAnswered = isNotAnswered(c);
-                  const DirIcon = notAnswered ? PhoneMissed : isOutbound ? PhoneOutgoing : PhoneIncoming;
-                  const dirColor = notAnswered
-                    ? "bg-destructive/10 text-destructive"
-                    : answered
-                      ? "bg-success/15 text-success"
-                      : "bg-muted text-muted-foreground";
+                  const DirIcon = isStatusChange
+                    ? RefreshCw
+                    : notAnswered ? PhoneMissed : isOutbound ? PhoneOutgoing : PhoneIncoming;
+                  const dirColor = isStatusChange
+                    ? "bg-primary/10 text-primary"
+                    : notAnswered
+                      ? "bg-destructive/10 text-destructive"
+                      : answered
+                        ? "bg-success/15 text-success"
+                        : "bg-muted text-muted-foreground";
                   const name = (c.company_id && companyById.get(c.company_id)) || "Unknown";
                   return (
                     <tr key={c.id} className="border-t hover:bg-muted/30">
                       <td className="px-5 py-3">
-                        <span
-                          className={`inline-flex items-center justify-center size-9 rounded-full ${dirColor}`}
-                        >
+                        <span className={`inline-flex items-center justify-center size-9 rounded-full ${dirColor}`}>
                           <DirIcon className="size-4" />
                         </span>
                       </td>
@@ -300,22 +304,25 @@ function CallsHistoryPage() {
                           <div className="min-w-0">
                             <div className="font-medium truncate">{name}</div>
                             <div className="text-[11px] text-muted-foreground">
-                              {isOutbound ? "Outbound" : "Inbound"}
+                              {isStatusChange ? "Status change" : isOutbound ? "Outbound" : "Inbound"}
                             </div>
                           </div>
                         </div>
                       </td>
                       <td className="px-3 py-3">
-                        <div className="font-medium">{c.note?.split(" — ")[0] || "—"}</div>
-                        <div className="text-[11px] font-mono text-muted-foreground">{c.to_number ?? "—"}</div>
+                        <div className="font-medium">{isStatusChange ? (c.note || "Status change") : (c.note?.split(" — ")[0] || "—")}</div>
+                        <div className="text-[11px] font-mono text-muted-foreground">{!isStatusChange ? (c.to_number ?? "—") : ""}</div>
                       </td>
-                      <td className="px-3 py-3"></td>
-                      <td className="px-3 py-3 font-mono text-xs">{formatDuration(c.duration)}</td>
+                      <td className="px-3 py-3">
+                        {isStatusChange && (
+                          <span className="text-[11px] px-2 py-0.5 rounded-full bg-primary/10 text-primary">Status change</span>
+                        )}
+                      </td>
+                      <td className="px-3 py-3 font-mono text-xs">{isStatusChange ? "—" : formatDuration(c.duration)}</td>
                       <td className="px-3 py-3 font-mono text-xs text-muted-foreground">
                         {new Date(c.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                       </td>
                     </tr>
-
                   );
                 })}
               </Fragment>

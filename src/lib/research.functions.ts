@@ -60,7 +60,7 @@ export const researchCompanyFn = createServerFn({ method: "POST" })
           contact_person: result.contact_person ?? null,
           address: result.address ?? null,
           vehicles: result.vehicles as any,
-          research_raw: { sources: result.sources, debug: result.debug, phones: result.phones } as any,
+          research_raw: { sources: result.sources, debug: result.debug, phones: result.phones, fordonMd: result.fordonMd } as any,
           researched_at: new Date().toISOString(),
         })
         .eq("id", data.companyId);
