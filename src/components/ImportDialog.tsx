@@ -28,13 +28,15 @@ function pickColumns(headerRow: any[]): { nameIdx: number; orgIdx: number } {
 export function ImportDialog({ onClose, onImported }: { onClose: () => void; onImported: () => void }) {
   const { user } = useAuth();
   const [rows, setRows] = useState<Row[]>([]);
+  const [skippedCount, setSkippedCount] = useState(0);
   const [fileName, setFileName] = useState("");
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
-  
 
   async function handleFile(file: File) {
     setFileName(file.name);
+    setRows([]);
+    setSkippedCount(0);
     const buf = await file.arrayBuffer();
     const wb = XLSX.read(buf);
 
@@ -59,7 +61,7 @@ export function ImportDialog({ onClose, onImported }: { onClose: () => void; onI
       }
     }
 
-    // Dedupe by org_number (preferred) or name
+    // Dedupe within the file by org_number
     const seen = new Set<string>();
     const unique: Row[] = [];
     for (const r of collected) {
@@ -68,7 +70,29 @@ export function ImportDialog({ onClose, onImported }: { onClose: () => void; onI
       seen.add(key);
       unique.push(r);
     }
-    setRows(unique);
+
+    // Fetch all existing org numbers for this user so we can skip duplicates
+    const existingOrgs = new Set<string>();
+    if (user) {
+      let from = 0;
+      const PAGE = 1000;
+      for (;;) {
+        const { data } = await supabase
+          .from("companies")
+          .select("org_number")
+          .eq("user_id", user.id)
+          .not("org_number", "is", null)
+          .range(from, from + PAGE - 1);
+        if (!data || data.length === 0) break;
+        for (const c of data) if (c.org_number) existingOrgs.add(c.org_number.toLowerCase());
+        if (data.length < PAGE) break;
+        from += PAGE;
+      }
+    }
+
+    const fresh = unique.filter((r) => !r.org_number || !existingOrgs.has(r.org_number.toLowerCase()));
+    setSkippedCount(unique.length - fresh.length);
+    setRows(fresh);
     if (!unique.length) toast.error("Couldn't find a 'Namn' column in the file.");
   }
 
@@ -132,10 +156,15 @@ export function ImportDialog({ onClose, onImported }: { onClose: () => void; onI
           />
         </label>
 
-        {rows.length > 0 && (
+        {(rows.length > 0 || skippedCount > 0) && (
           <div className="rounded-md border bg-muted/30 max-h-64 overflow-y-auto">
-            <div className="px-3 py-2 text-xs text-muted-foreground border-b sticky top-0 bg-muted/50">
-              {rows.length} unique companies detected
+            <div className="px-3 py-2 text-xs text-muted-foreground border-b sticky top-0 bg-muted/50 flex items-center justify-between gap-3">
+              <span>{rows.length} new companies to import</span>
+              {skippedCount > 0 && (
+                <span className="text-warning-foreground bg-warning/15 px-1.5 py-0.5 rounded">
+                  {skippedCount} already exist — skipped
+                </span>
+              )}
             </div>
             <ul className="divide-y text-sm">
               {rows.slice(0, 50).map((r, i) => (

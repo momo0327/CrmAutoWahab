@@ -14,6 +14,7 @@ import { Route as AcceptInviteRouteImport } from './routes/accept-invite'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as AdminRouteImport } from './routes/_admin'
 import { Route as AppIndexRouteImport } from './routes/_app.index'
+import { Route as AppValuationsRouteImport } from './routes/_app.valuations'
 import { Route as AppSettingsRouteImport } from './routes/_app.settings'
 import { Route as AppKanbanRouteImport } from './routes/_app.kanban'
 import { Route as AppEmailsRouteImport } from './routes/_app.emails'
@@ -53,6 +54,11 @@ const AdminRoute = AdminRouteImport.update({
 const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppValuationsRoute = AppValuationsRouteImport.update({
+  id: '/valuations',
+  path: '/valuations',
   getParentRoute: () => AppRoute,
 } as any)
 const AppSettingsRoute = AppSettingsRouteImport.update({
@@ -154,6 +160,7 @@ export interface FileRoutesByFullPath {
   '/emails': typeof AppEmailsRoute
   '/kanban': typeof AppKanbanRoute
   '/settings': typeof AppSettingsRoute
+  '/valuations': typeof AppValuationsRoute
   '/admin/$employeeId': typeof AdminAdminEmployeeIdRoute
   '/admin/emails': typeof AdminAdminEmailsRoute
   '/admin/employees': typeof AdminAdminEmployeesRoute
@@ -175,6 +182,7 @@ export interface FileRoutesByTo {
   '/emails': typeof AppEmailsRoute
   '/kanban': typeof AppKanbanRoute
   '/settings': typeof AppSettingsRoute
+  '/valuations': typeof AppValuationsRoute
   '/admin/$employeeId': typeof AdminAdminEmployeeIdRoute
   '/admin/emails': typeof AdminAdminEmailsRoute
   '/admin/employees': typeof AdminAdminEmployeesRoute
@@ -199,6 +207,7 @@ export interface FileRoutesById {
   '/_app/emails': typeof AppEmailsRoute
   '/_app/kanban': typeof AppKanbanRoute
   '/_app/settings': typeof AppSettingsRoute
+  '/_app/valuations': typeof AppValuationsRoute
   '/_app/': typeof AppIndexRoute
   '/_admin/admin/$employeeId': typeof AdminAdminEmployeeIdRoute
   '/_admin/admin/emails': typeof AdminAdminEmailsRoute
@@ -224,6 +233,7 @@ export interface FileRouteTypes {
     | '/emails'
     | '/kanban'
     | '/settings'
+    | '/valuations'
     | '/admin/$employeeId'
     | '/admin/emails'
     | '/admin/employees'
@@ -245,6 +255,7 @@ export interface FileRouteTypes {
     | '/emails'
     | '/kanban'
     | '/settings'
+    | '/valuations'
     | '/admin/$employeeId'
     | '/admin/emails'
     | '/admin/employees'
@@ -268,6 +279,7 @@ export interface FileRouteTypes {
     | '/_app/emails'
     | '/_app/kanban'
     | '/_app/settings'
+    | '/_app/valuations'
     | '/_app/'
     | '/_admin/admin/$employeeId'
     | '/_admin/admin/emails'
@@ -323,6 +335,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof AppIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/valuations': {
+      id: '/_app/valuations'
+      path: '/valuations'
+      fullPath: '/valuations'
+      preLoaderRoute: typeof AppValuationsRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/settings': {
@@ -488,6 +507,7 @@ interface AppRouteChildren {
   AppEmailsRoute: typeof AppEmailsRoute
   AppKanbanRoute: typeof AppKanbanRoute
   AppSettingsRoute: typeof AppSettingsRoute
+  AppValuationsRoute: typeof AppValuationsRoute
   AppIndexRoute: typeof AppIndexRoute
 }
 
@@ -500,6 +520,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppEmailsRoute: AppEmailsRoute,
   AppKanbanRoute: AppKanbanRoute,
   AppSettingsRoute: AppSettingsRoute,
+  AppValuationsRoute: AppValuationsRoute,
   AppIndexRoute: AppIndexRoute,
 }
 

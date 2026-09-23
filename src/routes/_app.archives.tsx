@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCompanies, STATUS_META, STATUS_ORDER, type Company, type Status } from "@/lib/companies";
+import { useCustomStatuses } from "@/lib/custom-statuses";
 import { CompanyDrawer } from "@/components/CompanyDrawer";
 import { Folder, ArrowLeft, Trash2, ArchiveRestore } from "lucide-react";
 import { toast } from "sonner";
@@ -15,8 +16,9 @@ function ArchivesPage() {
   const [open, setOpen] = useState<ArchiveFolder | null>(null);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
-  const [statusFilter, setStatusFilter] = useState<Status | "all">("all");
+  const [statusFilter, setStatusFilter] = useState<Status | `custom:${string}` | "all">("all");
   const { refresh: refreshCompanies } = useCompanies();
+  const { customStatuses } = useCustomStatuses();
 
   async function loadFolders() {
     const { data, error } = await (supabase as any)
@@ -54,10 +56,14 @@ function ArchivesPage() {
 
   const counts = useMemo(() => new Map(folders.map((f) => [f.id, 0])), [folders]);
 
-  const filteredCompanies = useMemo(
-    () => statusFilter === "all" ? companies : companies.filter((c) => c.status === statusFilter),
-    [companies, statusFilter],
-  );
+  const filteredCompanies = useMemo(() => {
+    if (statusFilter === "all") return companies;
+    if (statusFilter.startsWith("custom:")) {
+      const id = statusFilter.slice(7);
+      return companies.filter((c) => c.custom_status_id === id);
+    }
+    return companies.filter((c) => c.status === statusFilter && !c.custom_status_id);
+  }, [companies, statusFilter]);
 
   async function deleteFolder(folder: ArchiveFolder) {
     if (!confirm(`Delete folder "${folder.name}"? Companies inside will be restored to the main list.`))
@@ -143,7 +149,7 @@ function ArchivesPage() {
           </button>
           {STATUS_ORDER.map((s) => {
             const meta = STATUS_META[s];
-            const count = companies.filter((c) => c.status === s).length;
+            const count = companies.filter((c) => c.status === s && !c.custom_status_id).length;
             if (count === 0) return null;
             return (
               <button
@@ -153,6 +159,25 @@ function ArchivesPage() {
               >
                 <span className={`size-1.5 rounded-full ${meta.dot}`} />
                 {meta.label} <span className="opacity-70">{count}</span>
+              </button>
+            );
+          })}
+          {customStatuses.map((cs) => {
+            const key = `custom:${cs.id}` as const;
+            const count = companies.filter((c) => c.custom_status_id === cs.id).length;
+            if (count === 0) return null;
+            const active = statusFilter === key;
+            return (
+              <button
+                key={cs.id}
+                onClick={() => setStatusFilter(key)}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${active ? "" : "bg-card hover:bg-muted"}`}
+                style={active
+                  ? { backgroundColor: cs.color + "22", color: cs.color, borderColor: cs.color }
+                  : undefined}
+              >
+                <span className="size-1.5 rounded-full" style={{ backgroundColor: cs.color }} />
+                {cs.label} <span className="opacity-70">{count}</span>
               </button>
             );
           })}
@@ -172,6 +197,7 @@ function ArchivesPage() {
             </thead>
             <tbody className="divide-y">
               {filteredCompanies.map((c) => {
+                const customStatus = c.custom_status_id ? customStatuses.find((cs) => cs.id === c.custom_status_id) : null;
                 const meta = STATUS_META[c.status];
                 return (
                   <tr
@@ -186,10 +212,20 @@ function ArchivesPage() {
                     <td className="px-4 py-3">{c.contact_person || "—"}</td>
                     <td className="px-4 py-3">{c.fleet_size || "—"}</td>
                     <td className="px-4 py-3">
-                      <span className={`inline-flex items-center gap-1.5 text-[11px] font-medium tracking-[0.12em] uppercase px-2.5 py-1 rounded-full ${meta.tone}`}>
-                        <span className={`size-1.5 rounded-full ${meta.dot}`} />
-                        {meta.label}
-                      </span>
+                      {customStatus ? (
+                        <span
+                          className="inline-flex items-center gap-1.5 text-[11px] font-medium tracking-[0.12em] uppercase px-2.5 py-1 rounded-full"
+                          style={{ backgroundColor: customStatus.color + "22", color: customStatus.color }}
+                        >
+                          <span className="size-1.5 rounded-full" style={{ backgroundColor: customStatus.color }} />
+                          {customStatus.label}
+                        </span>
+                      ) : (
+                        <span className={`inline-flex items-center gap-1.5 text-[11px] font-medium tracking-[0.12em] uppercase px-2.5 py-1 rounded-full ${meta.tone}`}>
+                          <span className={`size-1.5 rounded-full ${meta.dot}`} />
+                          {meta.label}
+                        </span>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-xs text-muted-foreground">
                       {(c as any).archived_at
