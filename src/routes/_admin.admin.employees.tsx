@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getEmployeesOverviewFn } from "@/lib/admin.functions";
-import { Mail, Phone, ShieldCheck, Building2, CheckCircle2 } from "lucide-react";
+import { Mail, Phone, ShieldCheck, Building2, CheckCircle2, Star } from "lucide-react";
 
 export const Route = createFileRoute("/_admin/admin/employees")({
   component: AdminEmployees,
@@ -48,6 +48,7 @@ function AdminEmployees() {
             .sort((a, b) => (b.lastActivity ?? "").localeCompare(a.lastActivity ?? ""))
             .map((e) => {
               const isAdmin = e.roles.includes("admin");
+              const isTeamLead = e.roles.includes("team_lead");
               return (
                 <Link
                   key={e.id}
@@ -64,6 +65,11 @@ function AdminEmployees() {
                         {isAdmin && (
                           <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-primary/15 text-primary text-[10px] uppercase tracking-wider font-medium">
                             <ShieldCheck className="size-3" /> Admin
+                          </span>
+                        )}
+                        {isTeamLead && (
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-500 text-[10px] uppercase tracking-wider font-medium">
+                            <Star className="size-3" /> Team Lead
                           </span>
                         )}
                       </div>
