@@ -204,8 +204,15 @@ function AdminDashboard() {
               className="flex items-center justify-between gap-4 rounded-md border bg-background/40 px-4 py-3 hover:border-primary/40 transition-colors"
             >
               <div className="min-w-0">
-                <div className="font-medium text-sm truncate">
-                  {e.displayName || e.email || "—"}
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <div className="font-medium text-sm truncate">
+                    {e.displayName || e.email || "—"}
+                  </div>
+                  {e.roles?.includes("team_lead") && (
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground text-[10px] uppercase tracking-wider font-medium shrink-0">
+                      Team Lead
+                    </span>
+                  )}
                 </div>
                 <div className="text-xs text-muted-foreground truncate">{e.email}</div>
               </div>
