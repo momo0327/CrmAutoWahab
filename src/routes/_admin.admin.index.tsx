@@ -209,7 +209,7 @@ function AdminDashboard() {
                     {e.displayName || e.email || "—"}
                   </div>
                   {e.roles?.includes("team_lead") && (
-                    <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground text-[10px] uppercase tracking-wider font-medium shrink-0">
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-sky-500/15 text-sky-500 text-[10px] uppercase tracking-wider font-medium shrink-0">
                       Team Lead
                     </span>
                   )}

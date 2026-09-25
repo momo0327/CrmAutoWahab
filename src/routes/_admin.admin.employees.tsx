@@ -68,7 +68,7 @@ function AdminEmployees() {
                           </span>
                         )}
                         {isTeamLead && (
-                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground text-[10px] uppercase tracking-wider font-medium">
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-sky-500/15 text-sky-500 text-[10px] uppercase tracking-wider font-medium">
                             Team Lead
                           </span>
                         )}
