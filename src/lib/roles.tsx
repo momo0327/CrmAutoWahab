@@ -2,12 +2,13 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 
-export type AppRole = "admin" | "user";
+export type AppRole = "admin" | "user" | "team_lead" | "developer";
 
 type UserRoleContextValue = {
   loading: boolean;
   roles: AppRole[];
   isAdmin: boolean;
+  isTeamLead: boolean;
 };
 
 const UserRoleContext = createContext<UserRoleContextValue | null>(null);
@@ -44,6 +45,7 @@ export function UserRoleProvider({ children }: { children: ReactNode }) {
     loading: authLoading || loading,
     roles,
     isAdmin: roles.includes("admin"),
+    isTeamLead: roles.includes("team_lead"),
   }), [authLoading, loading, roles]);
 
   return <UserRoleContext.Provider value={value}>{children}</UserRoleContext.Provider>;

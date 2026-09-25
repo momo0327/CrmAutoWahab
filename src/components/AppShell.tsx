@@ -13,7 +13,7 @@ import { Shell, type ShellNavItem } from "@/components/Shell";
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { t } = useI18n();
   const { user, loading } = useAuth();
-  const { isAdmin, loading: roleLoading } = useUserRole();
+  const { isAdmin, isTeamLead, loading: roleLoading } = useUserRole();
   const navigate = useNavigate();
 
   const nav = useMemo<readonly ShellNavItem[]>(
@@ -26,10 +26,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       { to: "/calls", label: t("nav.call_history"), icon: Phone },
       { to: "/archives", label: t("nav.archives"), icon: Archive },
       { to: "/emails", label: t("nav.emails"), icon: Mail },
-      { to: "/valuations", label: t("nav.valuations"), icon: ClipboardList },
+      ...(isTeamLead ? [{ to: "/valuations", label: t("nav.valuations"), icon: ClipboardList } as const] : []),
       { to: "/settings", label: t("nav.settings"), icon: Settings },
     ],
-    [t],
+    [t, isTeamLead],
   );
 
 

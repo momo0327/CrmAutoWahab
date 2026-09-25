@@ -27,6 +27,7 @@ import { Route as AdminAdminRouteImport } from './routes/_admin.admin'
 import { Route as AdminAdminIndexRouteImport } from './routes/_admin.admin.index'
 import { Route as ApiPublicElksVoiceStartRouteImport } from './routes/api/public/elks-voice-start'
 import { Route as ApiPublicElksStatusRouteImport } from './routes/api/public/elks-status'
+import { Route as AdminAdminValuationsRouteImport } from './routes/_admin.admin.valuations'
 import { Route as AdminAdminSettingsRouteImport } from './routes/_admin.admin.settings'
 import { Route as AdminAdminInviteRouteImport } from './routes/_admin.admin.invite'
 import { Route as AdminAdminEmployeesRouteImport } from './routes/_admin.admin.employees'
@@ -121,6 +122,11 @@ const ApiPublicElksStatusRoute = ApiPublicElksStatusRouteImport.update({
   path: '/api/public/elks-status',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminAdminValuationsRoute = AdminAdminValuationsRouteImport.update({
+  id: '/valuations',
+  path: '/valuations',
+  getParentRoute: () => AdminAdminRoute,
+} as any)
 const AdminAdminSettingsRoute = AdminAdminSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -166,6 +172,7 @@ export interface FileRoutesByFullPath {
   '/admin/employees': typeof AdminAdminEmployeesRoute
   '/admin/invite': typeof AdminAdminInviteRoute
   '/admin/settings': typeof AdminAdminSettingsRoute
+  '/admin/valuations': typeof AdminAdminValuationsRoute
   '/api/public/elks-status': typeof ApiPublicElksStatusRoute
   '/api/public/elks-voice-start': typeof ApiPublicElksVoiceStartRoute
   '/admin/': typeof AdminAdminIndexRoute
@@ -188,6 +195,7 @@ export interface FileRoutesByTo {
   '/admin/employees': typeof AdminAdminEmployeesRoute
   '/admin/invite': typeof AdminAdminInviteRoute
   '/admin/settings': typeof AdminAdminSettingsRoute
+  '/admin/valuations': typeof AdminAdminValuationsRoute
   '/api/public/elks-status': typeof ApiPublicElksStatusRoute
   '/api/public/elks-voice-start': typeof ApiPublicElksVoiceStartRoute
   '/admin': typeof AdminAdminIndexRoute
@@ -214,6 +222,7 @@ export interface FileRoutesById {
   '/_admin/admin/employees': typeof AdminAdminEmployeesRoute
   '/_admin/admin/invite': typeof AdminAdminInviteRoute
   '/_admin/admin/settings': typeof AdminAdminSettingsRoute
+  '/_admin/admin/valuations': typeof AdminAdminValuationsRoute
   '/api/public/elks-status': typeof ApiPublicElksStatusRoute
   '/api/public/elks-voice-start': typeof ApiPublicElksVoiceStartRoute
   '/_admin/admin/': typeof AdminAdminIndexRoute
@@ -239,6 +248,7 @@ export interface FileRouteTypes {
     | '/admin/employees'
     | '/admin/invite'
     | '/admin/settings'
+    | '/admin/valuations'
     | '/api/public/elks-status'
     | '/api/public/elks-voice-start'
     | '/admin/'
@@ -261,6 +271,7 @@ export interface FileRouteTypes {
     | '/admin/employees'
     | '/admin/invite'
     | '/admin/settings'
+    | '/admin/valuations'
     | '/api/public/elks-status'
     | '/api/public/elks-voice-start'
     | '/admin'
@@ -286,6 +297,7 @@ export interface FileRouteTypes {
     | '/_admin/admin/employees'
     | '/_admin/admin/invite'
     | '/_admin/admin/settings'
+    | '/_admin/admin/valuations'
     | '/api/public/elks-status'
     | '/api/public/elks-voice-start'
     | '/_admin/admin/'
@@ -428,6 +440,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicElksStatusRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_admin/admin/valuations': {
+      id: '/_admin/admin/valuations'
+      path: '/valuations'
+      fullPath: '/admin/valuations'
+      preLoaderRoute: typeof AdminAdminValuationsRouteImport
+      parentRoute: typeof AdminAdminRoute
+    }
     '/_admin/admin/settings': {
       id: '/_admin/admin/settings'
       path: '/settings'
@@ -472,6 +491,7 @@ interface AdminAdminRouteChildren {
   AdminAdminEmployeesRoute: typeof AdminAdminEmployeesRoute
   AdminAdminInviteRoute: typeof AdminAdminInviteRoute
   AdminAdminSettingsRoute: typeof AdminAdminSettingsRoute
+  AdminAdminValuationsRoute: typeof AdminAdminValuationsRoute
   AdminAdminIndexRoute: typeof AdminAdminIndexRoute
 }
 
@@ -481,6 +501,7 @@ const AdminAdminRouteChildren: AdminAdminRouteChildren = {
   AdminAdminEmployeesRoute: AdminAdminEmployeesRoute,
   AdminAdminInviteRoute: AdminAdminInviteRoute,
   AdminAdminSettingsRoute: AdminAdminSettingsRoute,
+  AdminAdminValuationsRoute: AdminAdminValuationsRoute,
   AdminAdminIndexRoute: AdminAdminIndexRoute,
 }
 
