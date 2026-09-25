@@ -1,4 +1,4 @@
-CREATE TABLE public.valuations (
+CREATE TABLE IF NOT EXISTS public.valuations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
 
@@ -47,10 +47,11 @@ CREATE POLICY "Owner delete valuations" ON public.valuations FOR DELETE USING (a
 DROP POLICY IF EXISTS "Admins view all valuations" ON public.valuations;
 CREATE POLICY "Admins view all valuations" ON public.valuations FOR SELECT USING (has_role(auth.uid(), 'admin'::app_role));
 
-CREATE INDEX idx_valuations_user ON public.valuations(user_id);
-CREATE INDEX idx_valuations_brand ON public.valuations(user_id, brand);
-CREATE INDEX idx_valuations_date ON public.valuations(user_id, valuation_date DESC);
+CREATE INDEX IF NOT EXISTS idx_valuations_user ON public.valuations(user_id);
+CREATE INDEX IF NOT EXISTS idx_valuations_brand ON public.valuations(user_id, brand);
+CREATE INDEX IF NOT EXISTS idx_valuations_date ON public.valuations(user_id, valuation_date DESC);
 
+DROP TRIGGER IF EXISTS update_valuations_updated_at ON public.valuations;
 CREATE TRIGGER update_valuations_updated_at
   BEFORE UPDATE ON public.valuations
   FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
