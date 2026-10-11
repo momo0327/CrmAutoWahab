@@ -5,7 +5,7 @@ import { useAuth } from "@/lib/auth";
 import { useUserRole } from "@/lib/roles";
 import {
   Plus, Search, X, Pencil, Trash2, Copy, ChevronDown, ChevronUp,
-  Image as ImageIcon, Loader2, Check, ChevronsUpDown,
+  Image as ImageIcon, Loader2, Check, ChevronsUpDown, LayoutGrid, List,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -90,6 +90,7 @@ function ValuationsPage() {
   const [sortKey, setSortKey] = useState<SortKey>("valuation_date");
   const [sortDir, setSortDir] = useState<"desc" | "asc">("desc");
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [view, setView] = useState<"grid" | "list">("grid");
 
   async function load() {
     const { data, error } = await supabase
@@ -291,6 +292,14 @@ function ValuationsPage() {
         <SortBtn k="year" label="År" />
         <SortBtn k="mileage" label="Miltal" />
         <SortBtn k="valuation_price" label="Pris" />
+        <div className="ml-auto flex items-center gap-1">
+          <button onClick={() => setView("grid")} className={`size-7 inline-flex items-center justify-center rounded-md border transition-colors ${view === "grid" ? "bg-primary text-primary-foreground border-primary" : "hover:bg-muted text-muted-foreground"}`}>
+            <LayoutGrid className="size-3.5" />
+          </button>
+          <button onClick={() => setView("list")} className={`size-7 inline-flex items-center justify-center rounded-md border transition-colors ${view === "list" ? "bg-primary text-primary-foreground border-primary" : "hover:bg-muted text-muted-foreground"}`}>
+            <List className="size-3.5" />
+          </button>
+        </div>
       </div>
 
       {/* List */}
@@ -301,6 +310,19 @@ function ValuationsPage() {
       ) : filtered.length === 0 ? (
         <div className="rounded-xl border bg-card p-12 text-center text-muted-foreground text-sm">
           {valuations.length === 0 ? 'Inga värderingar än. Klicka "Ny värdering" för att börja.' : "Inga värderingar matchar dina filter."}
+        </div>
+      ) : view === "grid" ? (
+        <div className="grid grid-cols-2 gap-4">
+          {filtered.map((v) => (
+            <ValuationGridCard
+              key={v.id}
+              v={v}
+              onClick={() => setDetail(v)}
+              onEdit={() => openEdit(v)}
+              onCopy={() => copyValuation(v)}
+              onDelete={() => deleteValuation(v)}
+            />
+          ))}
         </div>
       ) : (
         <div className="grid gap-3">
@@ -347,6 +369,78 @@ function ValuationsPage() {
           }}
         />
       )}
+    </div>
+  );
+}
+
+// ─── Valuation Grid Card (Blocket-style) ─────────────────────────────────────
+
+function ValuationGridCard({ v, onClick, onEdit, onCopy, onDelete }: {
+  v: Valuation;
+  onClick: () => void;
+  onEdit: () => void;
+  onCopy: () => void;
+  onDelete: () => void;
+}) {
+  const thumb = v.images[0] ? imageUrl(v.images[0]) : null;
+  return (
+    <div
+      className="bg-card border rounded-xl overflow-hidden hover:border-primary/40 transition-colors cursor-pointer flex flex-col"
+      onClick={onClick}
+    >
+      {/* Image */}
+      <div className="relative w-full aspect-[4/3] bg-muted flex items-center justify-center overflow-hidden">
+        {thumb ? (
+          <img src={thumb} alt="" className="w-full h-full object-cover" />
+        ) : (
+          <ImageIcon className="size-10 text-muted-foreground/30" />
+        )}
+        {/* Action buttons overlay */}
+        <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100" onClick={(e) => e.stopPropagation()}>
+          <button onClick={onEdit} className="size-7 inline-flex items-center justify-center rounded-md bg-background/80 backdrop-blur border hover:bg-background text-muted-foreground hover:text-foreground transition-colors"><Pencil className="size-3.5" /></button>
+          <button onClick={onCopy} className="size-7 inline-flex items-center justify-center rounded-md bg-background/80 backdrop-blur border hover:bg-background text-muted-foreground hover:text-foreground transition-colors"><Copy className="size-3.5" /></button>
+          <button onClick={onDelete} className="size-7 inline-flex items-center justify-center rounded-md bg-background/80 backdrop-blur border hover:bg-destructive/20 text-destructive transition-colors"><Trash2 className="size-3.5" /></button>
+        </div>
+        {v.images.length > 1 && (
+          <div className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded bg-black/50 text-white text-[10px]">
+            {v.images.length} bilder
+          </div>
+        )}
+      </div>
+
+      {/* Info */}
+      <div className="p-3 flex flex-col gap-1.5">
+        <div className="font-display text-base leading-tight">
+          {[v.brand, v.model].filter(Boolean).join(" ") || "Okänt fordon"}
+        </div>
+        <div className="text-xs text-muted-foreground flex flex-wrap gap-x-2 gap-y-0.5">
+          {v.year && <span>{v.year}</span>}
+          {v.mileage != null && <span>{fmt(v.mileage)} mil</span>}
+          {v.vehicle_type && <span>{v.vehicle_type}</span>}
+          {v.axle_config && <span>{v.axle_config}</span>}
+        </div>
+        <div className="flex items-end justify-between gap-2 mt-0.5">
+          <div>
+            {v.valuation_price != null && (
+              <div className="font-semibold text-sm">{fmt(v.valuation_price)} kr</div>
+            )}
+            {v.valuation_date && (
+              <div className="text-[11px] text-muted-foreground">{new Date(v.valuation_date).toLocaleDateString("sv-SE")}</div>
+            )}
+          </div>
+          <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
+            <button onClick={onEdit} className="size-6 inline-flex items-center justify-center rounded border hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"><Pencil className="size-3" /></button>
+            <button onClick={onCopy} className="size-6 inline-flex items-center justify-center rounded border hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"><Copy className="size-3" /></button>
+            <button onClick={onDelete} className="size-6 inline-flex items-center justify-center rounded border hover:bg-destructive/10 text-destructive transition-colors"><Trash2 className="size-3" /></button>
+          </div>
+        </div>
+        {(v.purchase_price != null || v.sale_price != null) && (
+          <div className="flex gap-2 text-[11px] border-t pt-1.5 mt-0.5">
+            {v.purchase_price != null && <span className="text-info">Inköp: {fmt(v.purchase_price)} kr</span>}
+            {v.sale_price != null && <span className="text-success">Sälj: {fmt(v.sale_price)} kr</span>}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
