@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { CallHistorySkeleton } from "@/components/PageSkeletons";
 import { Fragment, useEffect, useMemo, useState } from "react";
 import {
   PhoneIncoming,
@@ -178,6 +179,8 @@ function CallsHistoryPage() {
     }
     return Array.from(groups.entries());
   }, [filtered]);
+
+  if (loading) return <CallHistorySkeleton />;
 
   return (
     <div className="p-8 space-y-6">

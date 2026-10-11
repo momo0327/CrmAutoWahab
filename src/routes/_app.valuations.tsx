@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { ValuationsSkeleton } from "@/components/PageSkeletons";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
@@ -193,6 +194,8 @@ function ValuationsPage() {
   }
 
   const hasFilters = !!(fBrand || fType || fAxle || fBuilder || fYearMin || fYearMax || fMileMin || fMileMax || fPriceMin || fPriceMax);
+
+  if (loading || roleLoading) return <ValuationsSkeleton />;
 
   return (
     <div className="p-8 space-y-6 w-full">

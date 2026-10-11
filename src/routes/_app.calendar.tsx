@@ -1,4 +1,5 @@
 import { createFileRoute, useSearch } from "@tanstack/react-router";
+import { CalendarSkeleton } from "@/components/PageSkeletons";
 import { useEffect, useMemo, useState } from "react";
 import { useCompanies } from "@/lib/companies";
 import {
@@ -148,9 +149,7 @@ function CalendarPage() {
       {/* Views */}
       <div className="flex-1 min-h-0 overflow-hidden">
         {loading ? (
-          <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
-            Loading…
-          </div>
+          <CalendarSkeleton />
         ) : view === "month" ? (
           <MonthView
             cursor={cursor}
