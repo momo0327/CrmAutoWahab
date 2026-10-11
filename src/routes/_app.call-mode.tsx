@@ -17,7 +17,9 @@ import {
   ChevronDown,
   Mail,
   Loader2,
+  Send,
 } from "lucide-react";
+import { EmailComposer } from "@/components/EmailComposer";
 import { toast } from "sonner";
 import { PhoneButtons } from "@/components/PhoneButtons";
 import { VehiclesTable, type Vehicle } from "@/components/VehiclesTable";
@@ -319,6 +321,7 @@ function CompanyCard({
   const [email, setEmail] = useState((initial as any).email ?? "");
   const [emailFocused, setEmailFocused] = useState(false);
   const [savingEmail, setSavingEmail] = useState(false);
+  const [showEmailComposer, setShowEmailComposer] = useState(false);
 
   // Custom phone state
   const [newPhone, setNewPhone] = useState("");
@@ -330,6 +333,7 @@ function CompanyCard({
     setNotes(initial.notes ?? "");
     setEmail((initial as any).email ?? "");
     setEmailFocused(false);
+    setShowEmailComposer(false);
     setNewPhone("");
     setSchedTitle("Call");
     setSchedDate(new Date());
@@ -527,6 +531,12 @@ function CompanyCard({
                   {email}
                 </span>
                 <CopyButton text={email} />
+                <button
+                  onClick={() => setShowEmailComposer(true)}
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-primary text-primary-foreground text-xs hover:opacity-90 shrink-0"
+                >
+                  <Send className="size-3" /> Skicka mejl
+                </button>
               </div>
             ) : (
               <div className="flex items-center gap-1.5">
@@ -685,6 +695,16 @@ function CompanyCard({
           )}
         </div>
       </div>
+
+      {showEmailComposer && email.trim() && (
+        <EmailComposer
+          companyId={company.id}
+          companyName={company.name}
+          contactName={(company as any).contact_person}
+          toEmail={email.trim()}
+          onClose={() => setShowEmailComposer(false)}
+        />
+      )}
     </div>
   );
 }
