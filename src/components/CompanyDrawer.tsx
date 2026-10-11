@@ -1,5 +1,7 @@
 import { useEffect, useState, useContext, useRef } from "react";
-import { X, Loader2, RefreshCw, ExternalLink, Trash2, Calendar as CalendarIcon, Plus, PhoneCall, Copy, Check, ChevronDown, Mail } from "lucide-react";
+import { X, Loader2, RefreshCw, ExternalLink, Trash2, Calendar as CalendarIcon, Plus, PhoneCall, Copy, Check, ChevronDown, Mail, Send } from "lucide-react";
+import { EmailComposer } from "./EmailComposer";
+import { getCompanyEmailLogsFn } from "@/lib/email.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
 import { researchCompanyFn } from "@/lib/research.functions";
@@ -37,6 +39,9 @@ export function CompanyDrawer({ company: initial, onClose, onCompanyChange, onCo
   const [savingEmail, setSavingEmail] = useState(false);
   const [emailSaved, setEmailSaved] = useState(false);
   const [emailFocused, setEmailFocused] = useState(false);
+  const [showEmailComposer, setShowEmailComposer] = useState(false);
+  const [emailLogs, setEmailLogs] = useState<any[]>([]);
+  const getEmailLogs = useServerFn(getCompanyEmailLogsFn);
   const softphone = useContext(SoftphoneContext);
   const research = useServerFn(researchCompanyFn);
   const { customStatuses, createCustomStatus, deleteCustomStatus } = useCustomStatuses();
@@ -59,6 +64,11 @@ export function CompanyDrawer({ company: initial, onClose, onCompanyChange, onCo
       .order("created_at", { ascending: false })
       .then(({ data }) => setCalls(data ?? []));
   }, [company.id]);
+
+  function refreshEmailLogs() {
+    getEmailLogs({ data: { companyId: company.id } }).then((r) => setEmailLogs(r.logs));
+  }
+  useEffect(() => { refreshEmailLogs(); }, [company.id]);
 
   async function refreshSchedules() {
     try {
@@ -365,6 +375,12 @@ export function CompanyDrawer({ company: initial, onClose, onCompanyChange, onCo
                     {email}
                   </span>
                   <QuickCopy value={email.trim()} />
+                  <button
+                    onClick={() => setShowEmailComposer(true)}
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-primary text-primary-foreground text-xs hover:opacity-90 ml-1"
+                  >
+                    <Send className="size-3" /> Skicka mejl
+                  </button>
                 </div>
               ) : (
                 <div className="flex items-center gap-1.5">
@@ -679,6 +695,22 @@ export function CompanyDrawer({ company: initial, onClose, onCompanyChange, onCo
             </ul>
           </section>
 
+          {emailLogs.length > 0 && (
+            <section className="space-y-2">
+              <h4 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Mejlhistorik</h4>
+              <ul className="space-y-2">
+                {emailLogs.map((log: any) => (
+                  <li key={log.id} className="text-sm border-l-2 border-blue-500/40 pl-3">
+                    <div className="font-medium truncate">{log.subject}</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">
+                      Från {log.from_email} · {new Date(log.sent_at).toLocaleString()}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
           <section className="space-y-2">
             <h4 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Call log</h4>
             {!readOnly && (
@@ -744,6 +776,16 @@ export function CompanyDrawer({ company: initial, onClose, onCompanyChange, onCo
 
         </div>
       </div>
+
+      {showEmailComposer && (
+        <EmailComposer
+          companyId={company.id}
+          companyName={company.name}
+          toEmail={email.trim()}
+          onClose={() => setShowEmailComposer(false)}
+          onSent={refreshEmailLogs}
+        />
+      )}
     </div>
   );
 }
