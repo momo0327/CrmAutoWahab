@@ -1,12 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useMemo, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { CompanyDrawer } from "@/components/CompanyDrawer";
-import { Mail, Search, Trash2, Download, FileText, FileSpreadsheet, Plus, X } from "lucide-react";
+import { Mail, Search, Trash2, Download, FileText, FileSpreadsheet, Plus, X, Send } from "lucide-react";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
 import type { Company } from "@/lib/companies";
+import { getSentEmailsFn } from "@/lib/email.functions";
 
 export const Route = createFileRoute("/_app/emails")({ component: EmailsPage });
 
@@ -24,7 +26,15 @@ const CATEGORY_COLORS = [
 type EmailCategory = { id: string; label: string; color: string };
 type EmailRow = { id: string; name: string; email: string; email_category_id: string | null };
 
+type SentLog = { id: string; to_email: string; from_email: string; subject: string; body: string; sent_at: string; company_id: string | null };
+
 function EmailsPage() {
+  const [tab, setTab] = useState<"emails" | "sent">("emails");
+  const [sentLogs, setSentLogs] = useState<SentLog[]>([]);
+  const [sentLoading, setSentLoading] = useState(false);
+  const [expandedLog, setExpandedLog] = useState<string | null>(null);
+  const getSentEmails = useServerFn(getSentEmailsFn);
+
   const [rows, setRows] = useState<EmailRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [categories, setCategories] = useState<EmailCategory[]>([]);
@@ -74,6 +84,15 @@ function EmailsPage() {
     loadCategories();
     load();
   }, []);
+
+  useEffect(() => {
+    if (tab !== "sent") return;
+    setSentLoading(true);
+    getSentEmails({}).then((r) => {
+      setSentLogs(r.logs as unknown as SentLog[]);
+      setSentLoading(false);
+    });
+  }, [tab]);
 
   async function createCategory() {
     if (!newLabel.trim()) return;
@@ -171,7 +190,21 @@ function EmailsPage() {
           <h1 className="font-display text-3xl tracking-wide uppercase">Emails</h1>
           <p className="text-sm text-muted-foreground mt-1">All company emails in one place.</p>
         </div>
-        {selectedIds.size > 0 && (
+        <div className="flex items-center gap-1 p-1 rounded-lg border bg-muted/40">
+          <button
+            onClick={() => setTab("emails")}
+            className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${tab === "emails" ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+          >
+            <Mail className="size-4" /> Emails
+          </button>
+          <button
+            onClick={() => setTab("sent")}
+            className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${tab === "sent" ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+          >
+            <Send className="size-4" /> Skickade
+          </button>
+        </div>
+        {tab === "emails" && selectedIds.size > 0 && (
           <div className="flex items-center gap-2">
             <div className="relative">
               <button
@@ -200,6 +233,57 @@ function EmailsPage() {
           </div>
         )}
       </header>
+
+      {tab === "sent" && (
+        <div className="space-y-3">
+          {sentLoading ? (
+            <div className="text-sm text-muted-foreground">Laddar…</div>
+          ) : sentLogs.length === 0 ? (
+            <div className="rounded-lg border bg-card px-6 py-16 text-center text-muted-foreground text-sm">
+              Inga skickade mejl ännu.
+            </div>
+          ) : (
+            <div className="rounded-lg border bg-card overflow-hidden">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
+                  <tr>
+                    <th className="text-left px-4 py-3 text-[11px] font-medium tracking-[0.18em] uppercase">Till</th>
+                    <th className="text-left px-4 py-3 text-[11px] font-medium tracking-[0.18em] uppercase">Ämne</th>
+                    <th className="text-left px-4 py-3 text-[11px] font-medium tracking-[0.18em] uppercase">Från</th>
+                    <th className="text-left px-4 py-3 text-[11px] font-medium tracking-[0.18em] uppercase">Datum</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {sentLogs.map((log) => (
+                    <>
+                      <tr
+                        key={log.id}
+                        className="hover:bg-muted/30 cursor-pointer"
+                        onClick={() => setExpandedLog(expandedLog === log.id ? null : log.id)}
+                      >
+                        <td className="px-4 py-4 truncate max-w-[180px]">{log.to_email}</td>
+                        <td className="px-4 py-4 font-medium truncate max-w-[220px]">{log.subject}</td>
+                        <td className="px-4 py-4 truncate max-w-[160px] text-muted-foreground">{log.from_email}</td>
+                        <td className="px-4 py-4 text-muted-foreground whitespace-nowrap">{new Date(log.sent_at).toLocaleString()}</td>
+                      </tr>
+                      {expandedLog === log.id && (
+                        <tr key={log.id + "-body"}>
+                          <td colSpan={4} className="px-6 py-4 bg-muted/20">
+                            <pre className="text-sm whitespace-pre-wrap font-sans">{log.body}</pre>
+                          </td>
+                        </tr>
+                      )}
+                    </>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          <p className="text-xs text-muted-foreground">{sentLogs.length} mejl skickade</p>
+        </div>
+      )}
+
+      {tab === "emails" && <>
 
       {/* Category filter pills + create button */}
       <div className="space-y-3">
@@ -405,6 +489,7 @@ function EmailsPage() {
           }}
         />
       )}
+      </>}
     </div>
   );
 }

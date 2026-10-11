@@ -115,6 +115,21 @@ export const deleteEmailTemplateFn = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+// ─── All sent emails for current user ────────────────────────────────────────
+
+export const getSentEmailsFn = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase } = context;
+    const { data: logs, error } = await supabase
+      .from("email_logs" as any)
+      .select("*")
+      .order("sent_at", { ascending: false })
+      .limit(500);
+    if (error) return { logs: [] };
+    return { logs: logs ?? [] };
+  });
+
 // ─── Email Logs for a company ─────────────────────────────────────────────────
 
 export const getCompanyEmailLogsFn = createServerFn({ method: "GET" })
