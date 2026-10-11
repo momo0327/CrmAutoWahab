@@ -33,6 +33,7 @@ function EmailsPage() {
   const [sentLogs, setSentLogs] = useState<SentLog[]>([]);
   const [sentLoading, setSentLoading] = useState(false);
   const [expandedLog, setExpandedLog] = useState<string | null>(null);
+  const [sentQ, setSentQ] = useState("");
   const getSentEmails = useServerFn(getSentEmailsFn);
 
   type Template = { id: string; name: string; subject: string; body: string; is_shared: boolean };
@@ -268,54 +269,10 @@ function EmailsPage() {
       </div>
 
       {tab === "sent" && (
-        <div className="space-y-3">
-          {sentLoading ? (
-            <div className="text-sm text-muted-foreground">Laddar…</div>
-          ) : sentLogs.length === 0 ? (
-            <div className="rounded-lg border bg-card px-6 py-16 text-center text-muted-foreground text-sm">
-              Inga skickade mejl ännu.
-            </div>
-          ) : (
-            <div className="rounded-lg border bg-card overflow-hidden">
-              <table className="w-full text-sm">
-                <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
-                  <tr>
-                    <th className="text-left px-4 py-3 text-[11px] font-medium tracking-[0.18em] uppercase">Till</th>
-                    <th className="text-left px-4 py-3 text-[11px] font-medium tracking-[0.18em] uppercase">Ämne</th>
-                    <th className="text-left px-4 py-3 text-[11px] font-medium tracking-[0.18em] uppercase">Från</th>
-                    <th className="text-left px-4 py-3 text-[11px] font-medium tracking-[0.18em] uppercase">Datum</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {sentLogs.map((log) => (
-                    <>
-                      <tr
-                        key={log.id}
-                        className="hover:bg-muted/30 cursor-pointer"
-                        onClick={() => setExpandedLog(expandedLog === log.id ? null : log.id)}
-                      >
-                        <td className="px-4 py-4 truncate max-w-[180px]">{log.to_email}</td>
-                        <td className="px-4 py-4 font-medium truncate max-w-[220px]">{log.subject}</td>
-                        <td className="px-4 py-4 truncate max-w-[160px] text-muted-foreground">{log.from_email}</td>
-                        <td className="px-4 py-4 text-muted-foreground whitespace-nowrap">{new Date(log.sent_at).toLocaleString()}</td>
-                      </tr>
-                      {expandedLog === log.id && (
-                        <tr key={log.id + "-body"}>
-                          <td colSpan={4} className="px-6 py-4 bg-muted/20">
-                            <pre className="text-sm whitespace-pre-wrap font-sans">{log.body}</pre>
-                          </td>
-                        </tr>
-                      )}
-                    </>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-          <p className="text-xs text-muted-foreground">{sentLogs.length} mejl skickade</p>
+        <div className="space-y-6">
 
           {/* Mallar */}
-          <div className="space-y-3 pt-4 border-t">
+          <div className="space-y-3">
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Mallar</h2>
               <button
@@ -404,6 +361,74 @@ function EmailsPage() {
               </div>
             )}
           </div>
+
+          {/* Sent history */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Skickade mejl</h2>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                <input
+                  type="text"
+                  value={sentQ}
+                  onChange={(e) => setSentQ(e.target.value)}
+                  placeholder="Sök ämne, mottagare…"
+                  className="pl-9 pr-3 py-2 rounded-md border bg-card text-sm w-64"
+                />
+              </div>
+            </div>
+            {sentLoading ? (
+              <div className="text-sm text-muted-foreground">Laddar…</div>
+            ) : (() => {
+              const lq = sentQ.toLowerCase();
+              const filtered = sentQ ? sentLogs.filter((l) => l.subject.toLowerCase().includes(lq) || l.to_email.toLowerCase().includes(lq) || l.from_email.toLowerCase().includes(lq)) : sentLogs;
+              return filtered.length === 0 ? (
+                <div className="rounded-lg border bg-card px-6 py-12 text-center text-muted-foreground text-sm">
+                  {sentLogs.length === 0 ? "Inga skickade mejl ännu." : "Inga resultat."}
+                </div>
+              ) : (
+                <>
+                  <div className="rounded-lg border bg-card overflow-hidden">
+                    <table className="w-full text-sm">
+                      <thead className="bg-muted/50">
+                        <tr>
+                          <th className="text-left px-4 py-3 text-[11px] font-medium tracking-[0.18em] uppercase text-muted-foreground">Till</th>
+                          <th className="text-left px-4 py-3 text-[11px] font-medium tracking-[0.18em] uppercase text-muted-foreground">Ämne</th>
+                          <th className="text-left px-4 py-3 text-[11px] font-medium tracking-[0.18em] uppercase text-muted-foreground">Från</th>
+                          <th className="text-left px-4 py-3 text-[11px] font-medium tracking-[0.18em] uppercase text-muted-foreground">Datum</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y">
+                        {filtered.map((log) => (
+                          <>
+                            <tr
+                              key={log.id}
+                              className="hover:bg-muted/30 cursor-pointer"
+                              onClick={() => setExpandedLog(expandedLog === log.id ? null : log.id)}
+                            >
+                              <td className="px-4 py-4 truncate max-w-[180px]">{log.to_email}</td>
+                              <td className="px-4 py-4 font-medium truncate max-w-[220px]">{log.subject}</td>
+                              <td className="px-4 py-4 truncate max-w-[160px] text-muted-foreground">{log.from_email}</td>
+                              <td className="px-4 py-4 text-muted-foreground whitespace-nowrap">{new Date(log.sent_at).toLocaleString()}</td>
+                            </tr>
+                            {expandedLog === log.id && (
+                              <tr key={log.id + "-body"}>
+                                <td colSpan={4} className="px-6 py-4 bg-muted/20">
+                                  <pre className="text-sm whitespace-pre-wrap font-sans">{log.body}</pre>
+                                </td>
+                              </tr>
+                            )}
+                          </>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <p className="text-xs text-muted-foreground">{filtered.length} av {sentLogs.length} mejl</p>
+                </>
+              );
+            })()}
+          </div>
+
         </div>
       )}
 
