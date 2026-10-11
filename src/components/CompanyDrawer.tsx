@@ -41,6 +41,7 @@ export function CompanyDrawer({ company: initial, onClose, onCompanyChange, onCo
   const [emailFocused, setEmailFocused] = useState(false);
   const [showEmailComposer, setShowEmailComposer] = useState(false);
   const [emailLogs, setEmailLogs] = useState<any[]>([]);
+  const [expandedEmailLog, setExpandedEmailLog] = useState<string | null>(null);
   const getEmailLogs = useServerFn(getCompanyEmailLogsFn);
   const softphone = useContext(SoftphoneContext);
   const research = useServerFn(researchCompanyFn);
@@ -698,15 +699,31 @@ export function CompanyDrawer({ company: initial, onClose, onCompanyChange, onCo
           {emailLogs.length > 0 && (
             <section className="space-y-2">
               <h4 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Mejlhistorik</h4>
-              <ul className="space-y-2">
-                {emailLogs.map((log: any) => (
-                  <li key={log.id} className="text-sm border-l-2 border-blue-500/40 pl-3">
-                    <div className="font-medium truncate">{log.subject}</div>
-                    <div className="text-xs text-muted-foreground mt-0.5">
-                      Från {log.from_email} · {new Date(log.sent_at).toLocaleString()}
-                    </div>
-                  </li>
-                ))}
+              <ul className="space-y-1.5">
+                {emailLogs.map((log: any) => {
+                  const expanded = expandedEmailLog === log.id;
+                  return (
+                    <li key={log.id} className="rounded-md border overflow-hidden">
+                      <button
+                        className="w-full text-left px-3 py-2.5 hover:bg-muted/40 transition-colors"
+                        onClick={() => setExpandedEmailLog(expanded ? null : log.id)}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <span className="text-sm font-medium truncate">{log.subject}</span>
+                          <span className="text-[10px] text-muted-foreground shrink-0 mt-0.5">{expanded ? "▲" : "▼"}</span>
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-0.5">
+                          {new Date(log.sent_at).toLocaleString()} · {log.from_email}
+                        </div>
+                      </button>
+                      {expanded && (
+                        <div className="px-3 py-3 border-t bg-muted/20">
+                          <pre className="text-sm whitespace-pre-wrap font-sans leading-relaxed">{log.body}</pre>
+                        </div>
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
             </section>
           )}
