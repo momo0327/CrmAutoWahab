@@ -15,12 +15,14 @@ type Template = {
 type Props = {
   companyId: string;
   companyName: string;
+  contactName?: string | null;
   toEmail: string;
   onClose: () => void;
   onSent?: () => void;
 };
 
-export function EmailComposer({ companyId, companyName, toEmail, onClose, onSent }: Props) {
+export function EmailComposer({ companyId, companyName, contactName, toEmail, onClose, onSent }: Props) {
+  const nameForTemplate = contactName?.trim() || companyName;
   const sendEmail = useServerFn(sendEmailFn);
   const getTemplates = useServerFn(getEmailTemplatesFn);
 
@@ -47,7 +49,7 @@ export function EmailComposer({ companyId, companyName, toEmail, onClose, onSent
   function applyTemplate(t: Template) {
     setSelectedTemplate(t);
     setSubject(t.subject);
-    setBody(t.body.replace(/\{\{name\}\}/g, companyName));
+    setBody(t.body.replace(/\{\{name\}\}/g, nameForTemplate));
     setShowTemplates(false);
   }
 
@@ -139,7 +141,7 @@ export function EmailComposer({ companyId, companyName, toEmail, onClose, onSent
           <textarea
             value={body}
             onChange={(e) => setBody(e.target.value)}
-            placeholder={`Hej ${companyName},\n\n`}
+            placeholder={`Hej ${nameForTemplate},\n\n`}
             rows={12}
             className="w-full px-3 py-2 rounded-md border bg-background text-sm resize-none font-mono"
           />

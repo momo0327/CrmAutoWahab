@@ -798,6 +798,7 @@ export function CompanyDrawer({ company: initial, onClose, onCompanyChange, onCo
         <EmailComposer
           companyId={company.id}
           companyName={company.name}
+          contactName={company.contact_person}
           toEmail={email.trim()}
           onClose={() => setShowEmailComposer(false)}
           onSent={refreshEmailLogs}
