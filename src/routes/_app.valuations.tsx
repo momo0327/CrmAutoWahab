@@ -6,6 +6,7 @@ import { useUserRole } from "@/lib/roles";
 import {
   Plus, Search, X, Pencil, Trash2, Copy, ChevronDown, ChevronUp,
   Image as ImageIcon, Loader2, Check, ChevronsUpDown, LayoutGrid, List,
+  ArrowUp, ArrowDown,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -591,17 +592,28 @@ function ValuationDetail({ v, onClose, onEdit, onCopy, onDelete, onUpdated }: {
           {/* Specs */}
           <section>
             <h3 className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground mb-3">Fordonsuppgifter</h3>
-            <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
-              <Field label="Märke" value={v.brand} />
-              <Field label="Modell" value={v.model} />
-              <Field label="Fordonstyp/påbyggnad" value={v.vehicle_type} />
-              <Field label="Axelkonfiguration" value={v.axle_config} />
-              <Field label="Årsmodell" value={v.year?.toString()} />
-              <Field label="Miltal" value={v.mileage != null ? `${fmt(v.mileage)} mil` : null} />
-              <Field label="Påbyggare" value={v.body_builder} />
-              <Field label="Kapacitet" value={v.capacity} />
-              {v.equipment && <div className="col-span-2"><Field label="Utrustning" value={v.equipment} /></div>}
-            </dl>
+            {(() => {
+              const isKranvaxlare = (v.vehicle_type ?? "").toLowerCase().includes("kranväxlare");
+              return (
+                <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                  <Field label="Märke" value={v.brand} />
+                  <Field label="Modell" value={v.model} />
+                  <Field label="Fordonstyp/påbyggnad" value={v.vehicle_type} />
+                  <Field label="Axelkonfiguration" value={v.axle_config} />
+                  <Field label="Årsmodell" value={v.year?.toString()} />
+                  <Field label="Miltal" value={v.mileage != null ? `${fmt(v.mileage)} mil` : null} />
+                  {isKranvaxlare ? (
+                    <>
+                      <Field label="Kran modell" value={v.equipment} />
+                      <Field label="Lastväxlare modell" value={v.body_builder} />
+                    </>
+                  ) : (
+                    <Field label="Påbyggare" value={v.body_builder} />
+                  )}
+                  <Field label="Kapacitet" value={v.capacity} />
+                </dl>
+              );
+            })()}
           </section>
 
           {/* Valuation */}
@@ -777,29 +789,37 @@ function ValuationModal({ initial, userId, onClose, onSaved }: {
 
         <div className="p-6 space-y-6">
           {/* Vehicle */}
-          <section className="space-y-3">
-            <h3 className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Fordonsuppgifter</h3>
-            <div className="grid grid-cols-2 gap-3">
-              <Field2 label="Märke" value={form.brand ?? ""} onChange={(v) => set("brand", v)} placeholder="Volvo" />
-              <Field2 label="Modell" value={form.model ?? ""} onChange={(v) => set("model", v)} placeholder="FH540" />
-              <Field2 label="Fordonstyp/påbyggnad" value={form.vehicle_type ?? ""} onChange={(v) => set("vehicle_type", v)} placeholder="Lastväxlare" />
-              <Field2 label="Axelkonfiguration" value={form.axle_config ?? ""} onChange={(v) => set("axle_config", v)} placeholder="8×4" />
-              <div className="space-y-1">
-                <label className="text-xs text-muted-foreground">Årsmodell</label>
-                <input type="number" value={form.year ?? ""} onChange={(e) => set("year", e.target.value ? parseInt(e.target.value) : null)} placeholder="2021" className="w-full px-3 py-2 rounded-md border bg-background text-sm" />
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs text-muted-foreground">Miltal (mil)</label>
-                <input type="number" value={form.mileage ?? ""} onChange={(e) => set("mileage", e.target.value ? parseInt(e.target.value) : null)} placeholder="40 000" className="w-full px-3 py-2 rounded-md border bg-background text-sm" />
-              </div>
-              <Field2 label="Påbyggare" value={form.body_builder ?? ""} onChange={(v) => set("body_builder", v)} placeholder="JOAB" />
-              <Field2 label="Kapacitet" value={form.capacity ?? ""} onChange={(v) => set("capacity", v)} placeholder="24 ton" />
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs text-muted-foreground">Utrustning och övrig information</label>
-              <input value={form.equipment ?? ""} onChange={(e) => set("equipment", e.target.value)} placeholder="T.ex. backamera, dragkrok, AC…" className="w-full px-3 py-2 rounded-md border bg-background text-sm" />
-            </div>
-          </section>
+          {(() => {
+            const isKranvaxlare = (form.vehicle_type ?? "").toLowerCase().includes("kranväxlare");
+            return (
+              <section className="space-y-3">
+                <h3 className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Fordonsuppgifter</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  <Field2 label="Märke" value={form.brand ?? ""} onChange={(v) => set("brand", v)} placeholder="Volvo" />
+                  <Field2 label="Modell" value={form.model ?? ""} onChange={(v) => set("model", v)} placeholder="FH540" />
+                  <Field2 label="Fordonstyp/påbyggnad" value={form.vehicle_type ?? ""} onChange={(v) => set("vehicle_type", v)} placeholder="Lastväxlare" />
+                  <Field2 label="Axelkonfiguration" value={form.axle_config ?? ""} onChange={(v) => set("axle_config", v)} placeholder="8×4" />
+                  <div className="space-y-1">
+                    <label className="text-xs text-muted-foreground">Årsmodell</label>
+                    <input type="number" value={form.year ?? ""} onChange={(e) => set("year", e.target.value ? parseInt(e.target.value) : null)} placeholder="2021" className="w-full px-3 py-2 rounded-md border bg-background text-sm" />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs text-muted-foreground">Miltal (mil)</label>
+                    <input type="number" value={form.mileage ?? ""} onChange={(e) => set("mileage", e.target.value ? parseInt(e.target.value) : null)} placeholder="40 000" className="w-full px-3 py-2 rounded-md border bg-background text-sm" />
+                  </div>
+                  {isKranvaxlare ? (
+                    <>
+                      <Field2 label="Kran modell" value={form.equipment ?? ""} onChange={(v) => set("equipment", v)} placeholder="Hiab 228" />
+                      <Field2 label="Lastväxlare modell" value={form.body_builder ?? ""} onChange={(v) => set("body_builder", v)} placeholder="JOAB" />
+                    </>
+                  ) : (
+                    <Field2 label="Påbyggare" value={form.body_builder ?? ""} onChange={(v) => set("body_builder", v)} placeholder="JOAB" />
+                  )}
+                  <Field2 label="Kapacitet" value={form.capacity ?? ""} onChange={(v) => set("capacity", v)} placeholder="24 ton" />
+                </div>
+              </section>
+            );
+          })()}
 
           {/* Valuation */}
           <section className="space-y-3">
@@ -832,25 +852,39 @@ function ValuationModal({ initial, userId, onClose, onSaved }: {
           <section className="space-y-2">
             <h3 className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Bilder</h3>
             <div className="flex flex-wrap gap-2">
-              {form.images.map((path) => (
-                <div key={path} className="relative size-20 rounded-lg overflow-hidden border group">
+              {form.images.map((path, i) => (
+                <div key={path} className="relative size-20 rounded-lg overflow-hidden border group flex-shrink-0">
                   <img src={imageUrl(path)} alt="" className="w-full h-full object-cover" />
+                  {/* Reorder arrows */}
+                  <div className="absolute inset-x-0 bottom-0 flex justify-between px-0.5 pb-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); if (i === 0) return; setForm((f) => { const imgs = [...f.images]; [imgs[i-1], imgs[i]] = [imgs[i], imgs[i-1]]; return { ...f, images: imgs }; }); }}
+                      disabled={i === 0}
+                      className="size-5 flex items-center justify-center rounded bg-black/60 text-white disabled:opacity-30 hover:bg-black/80"
+                    ><ArrowUp className="size-3" /></button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); if (i === form.images.length - 1) return; setForm((f) => { const imgs = [...f.images]; [imgs[i], imgs[i+1]] = [imgs[i+1], imgs[i]]; return { ...f, images: imgs }; }); }}
+                      disabled={i === form.images.length - 1}
+                      className="size-5 flex items-center justify-center rounded bg-black/60 text-white disabled:opacity-30 hover:bg-black/80"
+                    ><ArrowDown className="size-3" /></button>
+                  </div>
+                  {/* Delete */}
                   <button
                     onClick={() => removeImage(path)}
-                    className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"
-                  >
-                    <X className="size-4 text-white" />
-                  </button>
+                    className="absolute top-0.5 right-0.5 size-5 flex items-center justify-center rounded bg-black/60 text-white opacity-0 group-hover:opacity-100 hover:bg-black/80 transition-opacity"
+                  ><X className="size-3" /></button>
+                  {i === 0 && <div className="absolute top-0.5 left-0.5 px-1 py-0.5 rounded bg-primary text-primary-foreground text-[9px] font-medium">Huvudbild</div>}
                 </div>
               ))}
               <button
                 onClick={() => fileRef.current?.click()}
                 disabled={uploading}
-                className="size-20 rounded-lg border-2 border-dashed flex flex-col items-center justify-center gap-1 hover:bg-muted transition-colors text-muted-foreground disabled:opacity-50"
+                className="size-20 rounded-lg border-2 border-dashed flex flex-col items-center justify-center gap-1 hover:bg-muted transition-colors text-muted-foreground disabled:opacity-50 flex-shrink-0"
               >
                 {uploading ? <Loader2 className="size-4 animate-spin" /> : <><ImageIcon className="size-4" /><span className="text-[10px]">Lägg till</span></>}
               </button>
             </div>
+            {form.images.length > 1 && <p className="text-[11px] text-muted-foreground">Hovra över en bild och använd pilarna för att ändra ordning. Första bilden visas som huvudbild.</p>}
             <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => e.target.files && uploadImages(e.target.files)} />
           </section>
         </div>
