@@ -23,8 +23,14 @@ export const sendEmailFn = createServerFn({ method: "POST" })
     const { data: { user } } = await supabase.auth.getUser();
     if (!user?.email) return { ok: false, error: "No sender email found" };
 
-    const fromEmail = user.email;
-    const fromName = user.user_metadata?.display_name || user.user_metadata?.full_name || fromEmail;
+    const userEmail = user.email;
+    const userName = user.user_metadata?.display_name || user.user_metadata?.full_name || userEmail;
+
+    // SendGrid domain auth covers @autowahab.se — use user's address if it matches,
+    // otherwise fall back to info@autowahab.se as from and set user as reply-to.
+    const isAutowahab = userEmail.toLowerCase().endsWith("@autowahab.se");
+    const fromEmail = isAutowahab ? userEmail : "info@autowahab.se";
+    const fromName = isAutowahab ? userName : `${userName} via Autowahab`;
 
     const apiKey = process.env["SENDGRID_API_KEY"];
     if (!apiKey) return { ok: false, error: "SendGrid API key not configured" };
@@ -41,7 +47,7 @@ export const sendEmailFn = createServerFn({ method: "POST" })
           to: [{ email: data.toEmail, name: data.toName ?? data.toEmail }],
         }],
         from: { email: fromEmail, name: fromName },
-        reply_to: { email: fromEmail, name: fromName },
+        reply_to: { email: userEmail, name: userName },
         subject: data.subject,
         content: [{ type: "text/html", value: data.body.replace(/\n/g, "<br>") }],
       }),
@@ -56,7 +62,7 @@ export const sendEmailFn = createServerFn({ method: "POST" })
     await supabase.from("email_logs" as any).insert({
       user_id: userId,
       company_id: data.companyId ?? null,
-      from_email: fromEmail,
+      from_email: userEmail,
       to_email: data.toEmail,
       subject: data.subject,
       body: data.body,
