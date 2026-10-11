@@ -105,11 +105,21 @@ function ValuationsPage() {
 
   useEffect(() => { load(); }, []);
 
-  // Derived filter options
-  const brands = useMemo(() => Array.from(new Set(valuations.map((v) => v.brand).filter(Boolean) as string[])).sort(), [valuations]);
-  const types = useMemo(() => Array.from(new Set(valuations.map((v) => v.vehicle_type).filter(Boolean) as string[])).sort(), [valuations]);
-  const axles = useMemo(() => Array.from(new Set(valuations.map((v) => v.axle_config).filter(Boolean) as string[])).sort(), [valuations]);
-  const builders = useMemo(() => Array.from(new Set(valuations.map((v) => v.body_builder).filter(Boolean) as string[])).sort(), [valuations]);
+  // Derived filter options — dedup case-insensitively, show first occurrence capitalized
+  function uniqueCI(vals: (string | null)[]): string[] {
+    const seen = new Set<string>();
+    const out: string[] = [];
+    for (const v of vals) {
+      if (!v) continue;
+      const key = v.toLowerCase();
+      if (!seen.has(key)) { seen.add(key); out.push(v); }
+    }
+    return out.sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase(), "sv"));
+  }
+  const brands = useMemo(() => uniqueCI(valuations.map((v) => v.brand)), [valuations]);
+  const types = useMemo(() => uniqueCI(valuations.map((v) => v.vehicle_type)), [valuations]);
+  const axles = useMemo(() => uniqueCI(valuations.map((v) => v.axle_config)), [valuations]);
+  const builders = useMemo(() => uniqueCI(valuations.map((v) => v.body_builder)), [valuations]);
 
   const filtered = useMemo(() => {
     let list = valuations.filter((v) => {
