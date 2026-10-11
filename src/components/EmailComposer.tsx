@@ -32,7 +32,11 @@ export function EmailComposer({ companyId, companyName, contactName, toEmail, on
   const [body, setBody] = useState("");
   const [sending, setSending] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
+  const [touched, setTouched] = useState({ subject: false, body: false });
   const dropRef = useRef<HTMLDivElement>(null);
+
+  const subjectError = touched.subject && !subject.trim();
+  const bodyError = touched.body && !body.trim();
 
   useEffect(() => {
     getTemplates({}).then((r) => setTemplates(r.templates as unknown as Template[]));
@@ -54,7 +58,8 @@ export function EmailComposer({ companyId, companyName, contactName, toEmail, on
   }
 
   async function send() {
-    if (!subject.trim() || !body.trim()) return toast.error("Ämne och meddelande krävs");
+    setTouched({ subject: true, body: true });
+    if (!subject.trim() || !body.trim()) return;
     setSending(true);
     const res = await sendEmail({
       data: {
@@ -127,24 +132,32 @@ export function EmailComposer({ companyId, companyName, contactName, toEmail, on
           </div>
 
           {/* Subject */}
-          <div className="flex items-center gap-3 text-sm">
-            <span className="text-muted-foreground w-12 shrink-0">Ämne</span>
-            <input
-              value={subject}
-              onChange={(e) => setSubject(e.target.value)}
-              placeholder="Ämnesrad…"
-              className="flex-1 px-3 py-2 rounded-md border bg-background text-sm"
-            />
+          <div className="flex items-start gap-3 text-sm">
+            <span className="text-muted-foreground w-12 shrink-0 pt-2">Ämne</span>
+            <div className="flex-1 space-y-1">
+              <input
+                value={subject}
+                onChange={(e) => { setSubject(e.target.value); setTouched((t) => ({ ...t, subject: true })); }}
+                onBlur={() => setTouched((t) => ({ ...t, subject: true }))}
+                placeholder="Ämnesrad…"
+                className={`w-full px-3 py-2 rounded-md border bg-background text-sm ${subjectError ? "border-destructive ring-1 ring-destructive/50" : ""}`}
+              />
+              {subjectError && <p className="text-xs text-destructive">Ämne krävs</p>}
+            </div>
           </div>
 
           {/* Body */}
-          <textarea
-            value={body}
-            onChange={(e) => setBody(e.target.value)}
-            placeholder={`Hej ${nameForTemplate},\n\n`}
-            rows={12}
-            className="w-full px-3 py-2 rounded-md border bg-background text-sm resize-none font-mono"
-          />
+          <div className="space-y-1">
+            <textarea
+              value={body}
+              onChange={(e) => { setBody(e.target.value); setTouched((t) => ({ ...t, body: true })); }}
+              onBlur={() => setTouched((t) => ({ ...t, body: true }))}
+              placeholder={`Hej ${nameForTemplate},\n\n`}
+              rows={12}
+              className={`w-full px-3 py-2 rounded-md border bg-background text-sm resize-none font-mono ${bodyError ? "border-destructive ring-1 ring-destructive/50" : ""}`}
+            />
+            {bodyError && <p className="text-xs text-destructive">Meddelande krävs</p>}
+          </div>
           <p className="text-[11px] text-muted-foreground">Använd {"{{name}}"} i mallar för att automatiskt fylla i kundens namn.</p>
         </div>
 
@@ -153,7 +166,7 @@ export function EmailComposer({ companyId, companyName, contactName, toEmail, on
           <button onClick={onClose} className="px-4 py-2 text-sm rounded-md hover:bg-muted">Avbryt</button>
           <button
             onClick={send}
-            disabled={sending || !subject.trim() || !body.trim()}
+            disabled={sending}
             className="inline-flex items-center gap-2 px-4 py-2 text-sm rounded-md bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50"
           >
             {sending ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}

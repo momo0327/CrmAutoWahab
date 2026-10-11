@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import * as XLSX from "xlsx";
 import type { Company } from "@/lib/companies";
 import { getSentEmailsFn, getEmailTemplatesFn, saveEmailTemplateFn, deleteEmailTemplateFn } from "@/lib/email.functions";
+import { EmailsSkeleton } from "@/components/PageSkeletons";
 
 export const Route = createFileRoute("/_app/emails")({ component: EmailsPage });
 
@@ -216,6 +217,8 @@ function EmailsPage() {
     toast.success(`Cleared ${ids.length} email${ids.length === 1 ? "" : "s"}`);
   }
 
+  if (loading && tab === "emails") return <EmailsSkeleton />;
+
   return (
     <div className="p-8 space-y-6 w-full">
       <header className="flex items-end justify-between gap-4 flex-wrap">
@@ -378,7 +381,27 @@ function EmailsPage() {
               </div>
             </div>
             {sentLoading ? (
-              <div className="text-sm text-muted-foreground">Laddar…</div>
+              <div className="rounded-lg border bg-card overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead className="bg-muted/50">
+                    <tr>
+                      {["Till","Ämne","Från","Datum"].map((h) => (
+                        <th key={h} className="text-left px-4 py-3 text-[11px] font-medium tracking-[0.18em] uppercase text-muted-foreground">{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <tr key={i}>
+                        <td className="px-4 py-4"><div className="h-3.5 rounded bg-muted animate-pulse w-36" /></td>
+                        <td className="px-4 py-4"><div className="h-3.5 rounded bg-muted animate-pulse w-48" /></td>
+                        <td className="px-4 py-4"><div className="h-3.5 rounded bg-muted animate-pulse w-32" /></td>
+                        <td className="px-4 py-4"><div className="h-3.5 rounded bg-muted animate-pulse w-24" /></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             ) : (() => {
               const lq = sentQ.toLowerCase();
               const filtered = sentQ ? sentLogs.filter((l) => l.subject.toLowerCase().includes(lq) || l.to_email.toLowerCase().includes(lq) || l.from_email.toLowerCase().includes(lq)) : sentLogs;
@@ -541,9 +564,7 @@ function EmailsPage() {
         </div>
       </div>
 
-      {loading ? (
-        <div className="text-sm text-muted-foreground">Loading…</div>
-      ) : (
+      {(
         <div className="rounded-lg border bg-card overflow-x-auto">
           <table className="w-full min-w-[580px] text-sm">
             <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
@@ -616,7 +637,7 @@ function EmailsPage() {
         </div>
       )}
 
-      {rows.length > 0 && !loading && (
+      {rows.length > 0 && (
         <p className="text-xs text-muted-foreground">{filtered.length} of {rows.length} emails</p>
       )}
 

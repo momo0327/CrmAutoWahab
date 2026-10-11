@@ -119,9 +119,52 @@ export function SettingsSkeleton() {
   );
 }
 
+export function EmailsSkeleton() {
+  return (
+    <div className="p-8 space-y-6 w-full">
+      <div className="flex items-end justify-between gap-4">
+        <div className="space-y-2">
+          <Skeleton className="h-8 w-32" />
+          <Skeleton className="h-4 w-52" />
+        </div>
+      </div>
+      {/* Tab bar */}
+      <div className="flex gap-1 border-b pb-0">
+        <Skeleton className="h-10 w-24 rounded-none rounded-t-sm" />
+        <Skeleton className="h-10 w-28 rounded-none rounded-t-sm" />
+      </div>
+      {/* Filter pills */}
+      <div className="flex gap-2">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Skeleton key={i} className="h-8 w-20 rounded-full" />
+        ))}
+      </div>
+      {/* Search */}
+      <Skeleton className="h-9 w-full max-w-sm" />
+      {/* Table */}
+      <div className="rounded-lg border bg-card overflow-hidden">
+        <div className="bg-muted/50 px-4 py-3">
+          <Skeleton className="h-3 w-full max-w-lg" />
+        </div>
+        <div className="divide-y">
+          {Array.from({ length: 7 }).map((_, i) => (
+            <div key={i} className="px-4 py-4 flex items-center gap-4">
+              <Skeleton className="size-4" />
+              <Skeleton className="h-4 w-48" />
+              <Skeleton className="h-4 flex-1 max-w-xs" />
+              <Skeleton className="h-5 w-20 rounded-full" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function RouteSkeleton({ pathname }: { pathname?: string }) {
   if (pathname?.startsWith("/companies")) return <CompaniesSkeleton />;
   if (pathname?.startsWith("/kanban")) return <KanbanSkeleton />;
   if (pathname?.startsWith("/settings")) return <SettingsSkeleton />;
+  if (pathname?.startsWith("/emails")) return <EmailsSkeleton />;
   return <DashboardSkeleton />;
 }
