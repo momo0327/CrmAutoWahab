@@ -4,11 +4,11 @@ import { createPortal } from "react-dom";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { CompanyDrawer } from "@/components/CompanyDrawer";
-import { Mail, Search, Trash2, Download, FileText, FileSpreadsheet, Plus, X, Send } from "lucide-react";
+import { Mail, Search, Trash2, Download, FileText, FileSpreadsheet, Plus, X, Send, Pencil, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
 import type { Company } from "@/lib/companies";
-import { getSentEmailsFn } from "@/lib/email.functions";
+import { getSentEmailsFn, getEmailTemplatesFn, saveEmailTemplateFn, deleteEmailTemplateFn } from "@/lib/email.functions";
 
 export const Route = createFileRoute("/_app/emails")({ component: EmailsPage });
 
@@ -34,6 +34,37 @@ function EmailsPage() {
   const [sentLoading, setSentLoading] = useState(false);
   const [expandedLog, setExpandedLog] = useState<string | null>(null);
   const getSentEmails = useServerFn(getSentEmailsFn);
+
+  type Template = { id: string; name: string; subject: string; body: string; is_shared: boolean };
+  const [templates, setTemplates] = useState<Template[]>([]);
+  const [templatesLoading, setTemplatesLoading] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState<Partial<Template> | null>(null);
+  const [savingTemplate, setSavingTemplate] = useState(false);
+  const getTemplates = useServerFn(getEmailTemplatesFn);
+  const saveTemplate = useServerFn(saveEmailTemplateFn);
+  const deleteTemplate = useServerFn(deleteEmailTemplateFn);
+
+  async function loadTemplates() {
+    setTemplatesLoading(true);
+    const r = await getTemplates({});
+    setTemplates(r.templates as unknown as Template[]);
+    setTemplatesLoading(false);
+  }
+
+  async function handleSaveTemplate() {
+    if (!editingTemplate?.name?.trim() || !editingTemplate?.subject?.trim() || !editingTemplate?.body?.trim()) return;
+    setSavingTemplate(true);
+    await saveTemplate({ data: { id: editingTemplate.id, name: editingTemplate.name, subject: editingTemplate.subject, body: editingTemplate.body, isShared: editingTemplate.is_shared ?? false } });
+    setSavingTemplate(false);
+    setEditingTemplate(null);
+    loadTemplates();
+  }
+
+  async function handleDeleteTemplate(id: string) {
+    if (!confirm("Ta bort mallen?")) return;
+    await deleteTemplate({ data: { id } });
+    setTemplates((prev) => prev.filter((t) => t.id !== id));
+  }
 
   const [rows, setRows] = useState<EmailRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -92,6 +123,7 @@ function EmailsPage() {
       setSentLogs(r.logs as unknown as SentLog[]);
       setSentLoading(false);
     });
+    loadTemplates();
   }, [tab]);
 
   async function createCategory() {
@@ -190,20 +222,6 @@ function EmailsPage() {
           <h1 className="font-display text-3xl tracking-wide uppercase">Emails</h1>
           <p className="text-sm text-muted-foreground mt-1">All company emails in one place.</p>
         </div>
-        <div className="flex items-center gap-1 p-1 rounded-lg border bg-muted/40">
-          <button
-            onClick={() => setTab("emails")}
-            className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${tab === "emails" ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
-          >
-            <Mail className="size-4" /> Emails
-          </button>
-          <button
-            onClick={() => setTab("sent")}
-            className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${tab === "sent" ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
-          >
-            <Send className="size-4" /> Skickade
-          </button>
-        </div>
         {tab === "emails" && selectedIds.size > 0 && (
           <div className="flex items-center gap-2">
             <div className="relative">
@@ -233,6 +251,21 @@ function EmailsPage() {
           </div>
         )}
       </header>
+
+      <div className="flex items-center gap-1 border-b">
+        <button
+          onClick={() => setTab("emails")}
+          className={`inline-flex items-center gap-2 px-4 py-3 text-sm border-b-2 -mb-px transition-colors ${tab === "emails" ? "border-primary text-foreground font-medium" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+        >
+          <Mail className="size-4" /> Emails
+        </button>
+        <button
+          onClick={() => setTab("sent")}
+          className={`inline-flex items-center gap-2 px-4 py-3 text-sm border-b-2 -mb-px transition-colors ${tab === "sent" ? "border-primary text-foreground font-medium" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+        >
+          <Send className="size-4" /> Skickade
+        </button>
+      </div>
 
       {tab === "sent" && (
         <div className="space-y-3">
@@ -280,6 +313,97 @@ function EmailsPage() {
             </div>
           )}
           <p className="text-xs text-muted-foreground">{sentLogs.length} mejl skickade</p>
+
+          {/* Mallar */}
+          <div className="space-y-3 pt-4 border-t">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Mallar</h2>
+              <button
+                onClick={() => setEditingTemplate({ name: "", subject: "", body: "", is_shared: false })}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border text-sm hover:bg-muted"
+              >
+                <Plus className="size-3.5" /> Ny mall
+              </button>
+            </div>
+
+            {editingTemplate && (
+              <div className="rounded-lg border bg-card p-4 space-y-3">
+                <h3 className="text-sm font-medium">{editingTemplate.id ? "Redigera mall" : "Ny mall"}</h3>
+                <input
+                  value={editingTemplate.name ?? ""}
+                  onChange={(e) => setEditingTemplate((p) => ({ ...p, name: e.target.value }))}
+                  placeholder="Mallnamn…"
+                  className="w-full px-3 py-2 rounded-md border bg-background text-sm"
+                />
+                <input
+                  value={editingTemplate.subject ?? ""}
+                  onChange={(e) => setEditingTemplate((p) => ({ ...p, subject: e.target.value }))}
+                  placeholder="Ämnesrad…"
+                  className="w-full px-3 py-2 rounded-md border bg-background text-sm"
+                />
+                <textarea
+                  value={editingTemplate.body ?? ""}
+                  onChange={(e) => setEditingTemplate((p) => ({ ...p, body: e.target.value }))}
+                  placeholder={"Hej {{name}},\n\n"}
+                  rows={6}
+                  className="w-full px-3 py-2 rounded-md border bg-background text-sm resize-none font-mono"
+                />
+                <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={editingTemplate.is_shared ?? false}
+                    onChange={(e) => setEditingTemplate((p) => ({ ...p, is_shared: e.target.checked }))}
+                    className="size-4"
+                  />
+                  Dela med hela teamet
+                </label>
+                <p className="text-[11px] text-muted-foreground">Använd {"{{name}}"} för att automatiskt fylla i kundens namn.</p>
+                <div className="flex gap-2 justify-end">
+                  <button onClick={() => setEditingTemplate(null)} className="px-3 py-1.5 text-sm rounded-md hover:bg-muted">Avbryt</button>
+                  <button
+                    onClick={handleSaveTemplate}
+                    disabled={savingTemplate || !editingTemplate.name?.trim() || !editingTemplate.subject?.trim() || !editingTemplate.body?.trim()}
+                    className="inline-flex items-center gap-2 px-3 py-1.5 text-sm rounded-md bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                  >
+                    {savingTemplate ? <Loader2 className="size-3.5 animate-spin" /> : null}
+                    Spara mall
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {templatesLoading ? (
+              <div className="text-sm text-muted-foreground">Laddar mallar…</div>
+            ) : templates.length === 0 ? (
+              <div className="text-sm text-muted-foreground italic">Inga mallar ännu.</div>
+            ) : (
+              <div className="rounded-lg border bg-card divide-y overflow-hidden">
+                {templates.map((t) => (
+                  <div key={t.id} className="flex items-center gap-3 px-4 py-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-sm truncate">{t.name}</div>
+                      <div className="text-xs text-muted-foreground truncate">{t.subject}</div>
+                    </div>
+                    {t.is_shared && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-500 border border-blue-500/20 shrink-0">Delad</span>
+                    )}
+                    <button
+                      onClick={() => setEditingTemplate(t)}
+                      className="size-7 inline-flex items-center justify-center rounded border hover:bg-muted shrink-0"
+                    >
+                      <Pencil className="size-3.5" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteTemplate(t.id)}
+                      className="size-7 inline-flex items-center justify-center rounded border hover:bg-destructive/10 text-destructive shrink-0"
+                    >
+                      <Trash2 className="size-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
