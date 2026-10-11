@@ -39,6 +39,9 @@ export function CompanyDrawer({ company: initial, onClose, onCompanyChange, onCo
   const [savingEmail, setSavingEmail] = useState(false);
   const [emailSaved, setEmailSaved] = useState(false);
   const [emailFocused, setEmailFocused] = useState(false);
+  const [contactPerson, setContactPerson] = useState(initial.contact_person ?? "");
+  const [contactFocused, setContactFocused] = useState(false);
+  const [savingContact, setSavingContact] = useState(false);
   const [showEmailComposer, setShowEmailComposer] = useState(false);
   const [emailLogs, setEmailLogs] = useState<any[]>([]);
   const [expandedEmailLog, setExpandedEmailLog] = useState<string | null>(null);
@@ -55,6 +58,7 @@ export function CompanyDrawer({ company: initial, onClose, onCompanyChange, onCo
   useEffect(() => {
     setCompany(initial);
     setNotes(initial.notes ?? "");
+    setContactPerson(initial.contact_person ?? "");
   }, [initial]);
 
   useEffect(() => {
@@ -164,6 +168,20 @@ export function CompanyDrawer({ company: initial, onClose, onCompanyChange, onCo
     setCompany(row);
     onCompanyChange?.(row);
     await logStatusCall(`Status changed to ${cs.label}`);
+  }
+
+  async function saveContactPerson() {
+    setContactFocused(false);
+    const trimmed = contactPerson.trim();
+    if (trimmed === (company.contact_person ?? "")) return;
+    setSavingContact(true);
+    const { data, error } = await supabase.from("companies").update({ contact_person: trimmed || null }).eq("id", company.id).select().single();
+    setSavingContact(false);
+    if (error) return toast.error(error.message);
+    const row = data as Company;
+    setCompany(row);
+    onCompanyChange?.(row);
+    toast.success("Kontaktperson sparad");
   }
 
   async function saveNotes() {
@@ -422,8 +440,40 @@ export function CompanyDrawer({ company: initial, onClose, onCompanyChange, onCo
               </a>
             )}
             {company.address && <p className="text-sm text-muted-foreground">{company.address}</p>}
-            {company.contact_person && (
-              <p className="text-sm"><span className="text-muted-foreground">Contact:</span> {company.contact_person}</p>
+            {!readOnly && (
+              <div className="flex items-center gap-1.5">
+                {contactFocused ? (
+                  <div className="flex items-center gap-1.5 flex-1">
+                    <input
+                      autoFocus
+                      value={contactPerson}
+                      onChange={(e) => setContactPerson(e.target.value)}
+                      onBlur={saveContactPerson}
+                      onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); if (e.key === "Escape") { setContactPerson(company.contact_person ?? ""); setContactFocused(false); } }}
+                      placeholder="Kontaktperson…"
+                      className="flex-1 px-2 py-1 rounded-md border bg-background text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                    />
+                    {savingContact && <Loader2 className="size-3.5 animate-spin text-muted-foreground shrink-0" />}
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setContactFocused(true)}
+                    className="text-sm text-left hover:text-foreground transition-colors group flex items-center gap-1.5"
+                  >
+                    {contactPerson ? (
+                      <>
+                        <span className="text-muted-foreground">Kontakt:</span>
+                        <span>{contactPerson}</span>
+                      </>
+                    ) : (
+                      <span className="text-muted-foreground italic">+ Lägg till kontaktperson</span>
+                    )}
+                  </button>
+                )}
+              </div>
+            )}
+            {readOnly && company.contact_person && (
+              <p className="text-sm"><span className="text-muted-foreground">Kontakt:</span> {company.contact_person}</p>
             )}
           </section>
 
@@ -798,7 +848,7 @@ export function CompanyDrawer({ company: initial, onClose, onCompanyChange, onCo
         <EmailComposer
           companyId={company.id}
           companyName={company.name}
-          contactName={company.contact_person}
+          contactName={contactPerson || company.contact_person}
           toEmail={email.trim()}
           onClose={() => setShowEmailComposer(false)}
           onSent={refreshEmailLogs}
