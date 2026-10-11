@@ -49,7 +49,10 @@ export const sendEmailFn = createServerFn({ method: "POST" })
         from: { email: fromEmail, name: fromName },
         reply_to: { email: userEmail, name: userName },
         subject: data.subject,
-        content: [{ type: "text/html", value: data.body.replace(/\n/g, "<br>") }],
+        content: [
+          { type: "text/plain", value: data.body },
+          { type: "text/html", value: `<!DOCTYPE html><html><body style="font-family:sans-serif;font-size:15px;line-height:1.6;color:#1a1a1a;max-width:600px;margin:0 auto;padding:24px">${data.body.replace(/\n/g, "<br>")}</body></html>` },
+        ],
       }),
     });
 
