@@ -119,6 +119,58 @@ export function SettingsSkeleton() {
   );
 }
 
+export function CallModeSkeleton() {
+  return (
+    <div className="relative flex flex-col h-full bg-background overflow-hidden">
+      {/* Header */}
+      <div className="shrink-0 border-b px-6 py-4 flex items-center justify-between">
+        <div className="space-y-2">
+          <Skeleton className="h-7 w-32" />
+          <Skeleton className="h-3.5 w-40" />
+        </div>
+        <div className="flex items-center gap-2">
+          <Skeleton className="size-9 rounded-full" />
+          <Skeleton className="h-4 w-16" />
+          <Skeleton className="size-9 rounded-full" />
+        </div>
+      </div>
+      {/* Progress bar */}
+      <div className="shrink-0 h-1 bg-muted">
+        <div className="h-full bg-muted-foreground/20 w-1/4 animate-pulse" />
+      </div>
+      {/* Card */}
+      <div className="flex-1 min-h-0 overflow-auto p-4 space-y-4">
+        <div className="bg-card border rounded-xl p-5 space-y-4">
+          <div className="space-y-2">
+            <Skeleton className="h-6 w-56" />
+            <Skeleton className="h-3.5 w-32" />
+            <Skeleton className="h-3.5 w-24" />
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Skeleton key={i} className="h-8 w-28 rounded-lg" />
+            ))}
+          </div>
+          <Skeleton className="h-8 w-full rounded-md" />
+          <Skeleton className="h-7 w-48 rounded-md" />
+        </div>
+        <div className="bg-card border rounded-xl p-4 space-y-3">
+          <Skeleton className="h-3.5 w-28" />
+          <div className="flex flex-wrap gap-2">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Skeleton key={i} className="h-7 w-20 rounded-full" />
+            ))}
+          </div>
+        </div>
+        <div className="bg-card border rounded-xl p-4 space-y-2">
+          <Skeleton className="h-3.5 w-20" />
+          <Skeleton className="h-20 w-full rounded-md" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function EmailsSkeleton() {
   return (
     <div className="p-8 space-y-6 w-full">
@@ -166,5 +218,6 @@ export function RouteSkeleton({ pathname }: { pathname?: string }) {
   if (pathname?.startsWith("/kanban")) return <KanbanSkeleton />;
   if (pathname?.startsWith("/settings")) return <SettingsSkeleton />;
   if (pathname?.startsWith("/emails")) return <EmailsSkeleton />;
+  if (pathname?.startsWith("/call-mode")) return <CallModeSkeleton />;
   return <DashboardSkeleton />;
 }

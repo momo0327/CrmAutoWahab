@@ -22,6 +22,7 @@ import {
 import { EmailComposer } from "@/components/EmailComposer";
 import { toast } from "sonner";
 import { PhoneButtons } from "@/components/PhoneButtons";
+import { CallModeSkeleton } from "@/components/PageSkeletons";
 import { VehiclesTable, type Vehicle } from "@/components/VehiclesTable";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -55,7 +56,7 @@ const CALL_MODE_STATUS_KEY = "call_mode_last_status";
 const CALL_MODE_COMPANY_KEY = "call_mode_last_company";
 
 function CallModePage() {
-  const { companies, upsertCompany } = useCompanies();
+  const { companies, upsertCompany, loading } = useCompanies();
   const { customStatuses } = useCustomStatuses();
   const [selectedStatus, setSelectedStatus] = useState<Status | `custom:${string}`>(() => {
     try {
@@ -149,6 +150,8 @@ function CallModePage() {
       ? "-translate-x-16 opacity-0"
       : "translate-x-16 opacity-0"
     : "translate-x-0 opacity-100";
+
+  if (loading) return <CallModeSkeleton />;
 
   return (
     <div className="relative flex flex-col h-full bg-background overflow-hidden">
