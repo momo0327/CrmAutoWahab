@@ -277,7 +277,7 @@ function AdminValuationsPage() {
           {valuations.length === 0 ? 'Inga värderingar än. Klicka "Ny värdering" för att börja.' : "Inga värderingar matchar dina filter."}
         </div>
       ) : view === "grid" ? (
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {filtered.map((v) => (
             <ValuationGridCard key={v.id} v={v} onClick={() => setDetail(v)} onEdit={() => openEdit(v)} onCopy={() => copyValuation(v)} onDelete={() => deleteValuation(v)} />
           ))}
