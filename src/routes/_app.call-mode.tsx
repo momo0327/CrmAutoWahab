@@ -18,7 +18,7 @@ import {
   Mail,
   Loader2,
   Send,
-  ArrowUpDown,
+  SlidersHorizontal,
 } from "lucide-react";
 import { EmailComposer } from "@/components/EmailComposer";
 import { toast } from "sonner";
@@ -106,14 +106,18 @@ function CallModePage() {
   const [idx, setIdx] = useState(0);
   const [direction, setDirection] = useState<"left" | "right" | null>(null);
   const [animating, setAnimating] = useState(false);
-  const [sortByFleet, setSortByFleet] = useState(false);
+  const [truckSort, setTruckSort] = useState<"most" | "least" | null>(null);
+  const [truckSortOpen, setTruckSortOpen] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
   // Touch swipe
   const touchStartX = useRef<number | null>(null);
 
-  const sortedQueue = sortByFleet
-    ? [...queue].sort((a, b) => (parseInt(String(b.fleet_size ?? 0)) || 0) - (parseInt(String(a.fleet_size ?? 0)) || 0))
+  const sortedQueue = truckSort
+    ? [...queue].sort((a, b) => {
+        const diff = (parseInt(String(b.fleet_size ?? 0)) || 0) - (parseInt(String(a.fleet_size ?? 0)) || 0);
+        return truckSort === "most" ? diff : -diff;
+      })
     : queue;
 
   const company = sortedQueue[idx] ?? null;
@@ -221,14 +225,48 @@ function CallModePage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => { setSortByFleet((s) => !s); setIdx(0); }}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border text-xs transition-colors ${sortByFleet ? "bg-primary text-primary-foreground border-primary" : "hover:bg-muted text-muted-foreground"}`}
-            title="Sortera efter antal lastbilar"
-          >
-            <ArrowUpDown className="size-3.5" />
-            Lastbilar
-          </button>
+          <div className="relative">
+            <button
+              onClick={() => setTruckSortOpen((o) => !o)}
+              className={`inline-flex items-center gap-2 px-3 py-2 rounded-md border text-sm transition-colors ${truckSort ? "bg-primary text-primary-foreground border-primary" : "bg-card hover:bg-muted"}`}
+            >
+              <SlidersHorizontal className="size-4" />
+              {truckSort === "most" ? "Most lastbilar" : truckSort === "least" ? "Fewest lastbilar" : "Lastbilar"}
+              <ChevronDown className="size-3.5" />
+            </button>
+            {truckSortOpen && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setTruckSortOpen(false)} />
+                <div className="absolute right-0 mt-1 z-50 w-52 rounded-md border bg-popover shadow-md overflow-hidden">
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground px-3 py-2">Sort by lastbilar</p>
+                  {([
+                    { value: "most", label: "Most lastbilar first" },
+                    { value: "least", label: "Fewest lastbilar first" },
+                  ] as const).map((opt) => (
+                    <button
+                      key={opt.value}
+                      onClick={() => { setTruckSort(truckSort === opt.value ? null : opt.value); setTruckSortOpen(false); setIdx(0); }}
+                      className={`w-full flex items-center justify-between px-3 py-2 text-sm hover:bg-muted text-left ${truckSort === opt.value ? "font-semibold" : ""}`}
+                    >
+                      {opt.label}
+                      {truckSort === opt.value && <span className="text-xs text-muted-foreground">✓</span>}
+                    </button>
+                  ))}
+                  {truckSort && (
+                    <>
+                      <div className="border-t" />
+                      <button
+                        onClick={() => { setTruckSort(null); setTruckSortOpen(false); setIdx(0); }}
+                        className="w-full px-3 py-2 text-sm hover:bg-muted text-left text-muted-foreground"
+                      >
+                        Clear sort
+                      </button>
+                    </>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
           <button
             onClick={() => navigate("left")}
             disabled={idx === 0 || animating}
