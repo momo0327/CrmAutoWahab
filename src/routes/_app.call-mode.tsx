@@ -18,6 +18,7 @@ import {
   Mail,
   Loader2,
   Send,
+  ArrowUpDown,
 } from "lucide-react";
 import { EmailComposer } from "@/components/EmailComposer";
 import { toast } from "sonner";
@@ -105,12 +106,17 @@ function CallModePage() {
   const [idx, setIdx] = useState(0);
   const [direction, setDirection] = useState<"left" | "right" | null>(null);
   const [animating, setAnimating] = useState(false);
+  const [sortByFleet, setSortByFleet] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
   // Touch swipe
   const touchStartX = useRef<number | null>(null);
 
-  const company = queue[idx] ?? null;
+  const sortedQueue = sortByFleet
+    ? [...queue].sort((a, b) => (parseInt(String(b.fleet_size ?? 0)) || 0) - (parseInt(String(a.fleet_size ?? 0)) || 0))
+    : queue;
+
+  const company = sortedQueue[idx] ?? null;
 
   // Persist last company ID whenever it changes
   useEffect(() => {
@@ -122,7 +128,7 @@ function CallModePage() {
   function navigate(dir: "left" | "right") {
     if (animating) return;
     const next = dir === "right" ? idx + 1 : idx - 1;
-    if (next < 0 || next >= queue.length) return;
+    if (next < 0 || next >= sortedQueue.length) return;
     setDirection(dir);
     setAnimating(true);
     setTimeout(() => {
@@ -216,6 +222,14 @@ function CallModePage() {
         </div>
         <div className="flex items-center gap-2">
           <button
+            onClick={() => { setSortByFleet((s) => !s); setIdx(0); }}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border text-xs transition-colors ${sortByFleet ? "bg-primary text-primary-foreground border-primary" : "hover:bg-muted text-muted-foreground"}`}
+            title="Sortera efter antal lastbilar"
+          >
+            <ArrowUpDown className="size-3.5" />
+            Lastbilar
+          </button>
+          <button
             onClick={() => navigate("left")}
             disabled={idx === 0 || animating}
             className="size-9 inline-flex items-center justify-center rounded-full border hover:bg-muted disabled:opacity-30 transition-colors"
@@ -223,11 +237,11 @@ function CallModePage() {
             <ChevronLeft className="size-5" />
           </button>
           <span className="text-sm text-muted-foreground tabular-nums w-16 text-center">
-            {idx + 1} / {queue.length}
+            {idx + 1} / {sortedQueue.length}
           </span>
           <button
             onClick={() => navigate("right")}
-            disabled={idx === queue.length - 1 || animating}
+            disabled={idx === sortedQueue.length - 1 || animating}
             className="size-9 inline-flex items-center justify-center rounded-full border hover:bg-muted disabled:opacity-30 transition-colors"
           >
             <ChevronRight className="size-5" />
@@ -239,13 +253,13 @@ function CallModePage() {
       <div className="shrink-0 h-1 bg-muted">
         <div
           className="h-full bg-primary transition-all duration-300"
-          style={{ width: `${((idx + 1) / queue.length) * 100}%` }}
+          style={{ width: `${((idx + 1) / sortedQueue.length) * 100}%` }}
         />
       </div>
 
       {/* Content area */}
       <div className="flex-1 min-h-0 relative overflow-hidden">
-        {queue.length === 0 ? (
+        {sortedQueue.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full gap-4 text-muted-foreground">
             <Phone className="size-12 opacity-20" />
             <p className="text-lg font-medium">No companies with status "{selectedCustom?.label ?? meta?.label}"</p>
