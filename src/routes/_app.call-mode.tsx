@@ -81,11 +81,22 @@ function CallModePage() {
         ? companies.filter((c) => c.custom_status_id === selectedStatus.slice(7))
         : companies.filter((c) => c.status === selectedStatus && !c.custom_status_id);
       setQueue(filtered);
-      // Restore last company position by ID
+      // Restore last company position by ID — use sorted order if sort is active
       try {
         const lastId = localStorage.getItem(CALL_MODE_COMPANY_KEY);
-        const restored = lastId ? filtered.findIndex((c) => c.id === lastId) : -1;
-        setIdx(restored > 0 ? restored : 0);
+        if (lastId && truckSort) {
+          const countT = (c: Company) =>
+            ((c.vehicles as any[]) ?? []).filter((v: any) => v.type?.toLowerCase() === "lastbil").length;
+          const sorted = [...filtered].sort((a, b) => {
+            const diff = countT(b) - countT(a);
+            return truckSort === "most" ? diff : -diff;
+          });
+          const restored = sorted.findIndex((c) => c.id === lastId);
+          setIdx(restored > 0 ? restored : 0);
+        } else {
+          const restored = lastId ? filtered.findIndex((c) => c.id === lastId) : -1;
+          setIdx(restored > 0 ? restored : 0);
+        }
       } catch {
         setIdx(0);
       }
@@ -113,9 +124,12 @@ function CallModePage() {
   // Touch swipe
   const touchStartX = useRef<number | null>(null);
 
+  const countTrucks = (c: Company) =>
+    ((c.vehicles as any[]) ?? []).filter((v: any) => v.type?.toLowerCase() === "lastbil").length;
+
   const sortedQueue = truckSort
     ? [...queue].sort((a, b) => {
-        const diff = (parseInt(String(b.fleet_size ?? 0)) || 0) - (parseInt(String(a.fleet_size ?? 0)) || 0);
+        const diff = countTrucks(b) - countTrucks(a);
         return truckSort === "most" ? diff : -diff;
       })
     : queue;
