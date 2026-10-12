@@ -110,7 +110,8 @@ function ValuationsPage() {
   function uniqueCI(vals: (string | null)[]): string[] {
     const seen = new Set<string>();
     const out: string[] = [];
-    for (const v of vals) {
+    for (const raw of vals) {
+      const v = raw?.trim();
       if (!v) continue;
       const key = v.toLowerCase();
       if (!seen.has(key)) { seen.add(key); out.push(v); }
@@ -769,11 +770,11 @@ function ValuationModal({ initial, userId, onClose, onSaved }: {
   async function save() {
     setSaving(true);
     const payload = {
-      brand: form.brand || null, model: form.model || null,
-      vehicle_type: form.vehicle_type || null, axle_config: form.axle_config || null,
+      brand: form.brand?.trim() || null, model: form.model?.trim() || null,
+      vehicle_type: form.vehicle_type?.trim() || null, axle_config: form.axle_config?.trim() || null,
       year: form.year, mileage: form.mileage,
-      body_builder: form.body_builder || null, capacity: form.capacity || null,
-      equipment: form.equipment || null, valuation_price: form.valuation_price,
+      body_builder: form.body_builder?.trim() || null, capacity: form.capacity?.trim() || null,
+      equipment: form.equipment?.trim() || null, valuation_price: form.valuation_price,
       valuation_date: form.valuation_date || null,
       purchase_price: form.purchase_price, purchase_date: form.purchase_date || null,
       sale_price: form.sale_price, sale_date: form.sale_date || null,

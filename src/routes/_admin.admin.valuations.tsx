@@ -98,7 +98,8 @@ function AdminValuationsPage() {
   function uniqueCI(vals: (string | null)[]): string[] {
     const seen = new Set<string>();
     const out: string[] = [];
-    for (const v of vals) {
+    for (const raw of vals) {
+      const v = raw?.trim();
       if (!v) continue;
       const key = v.toLowerCase();
       if (!seen.has(key)) { seen.add(key); out.push(v); }
